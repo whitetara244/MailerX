@@ -1,6 +1,6 @@
 # main.py - Fixed production version (no syntax errors)
 """
-SuperMailer Pro - Production Grade Email Marketing System
+MailerX Pro - Production Grade Email Marketing System
 Designed for 50k+ email campaigns with enterprise security and scalability
 """
 
@@ -96,7 +96,7 @@ class Config:
     PERMANENT_SESSION_LIFETIME: int = int(os.environ.get('PERMANENT_SESSION_LIFETIME', '7200'))
     
     # Database - Use SQLite for production simplicity
-    DATABASE_PATH: str = os.environ.get('DATABASE_PATH', '/app/data/supermailer.db')
+    DATABASE_PATH: str = os.environ.get('DATABASE_PATH', '/app/data/MailerX.db')
     CONFIG_PATH: str = os.environ.get('CONFIG_PATH', '/app/data/config.json')
     TEMPLATES_PATH: str = os.environ.get('TEMPLATES_PATH', '/app/data/templates')
     LOGS_PATH: str = os.environ.get('LOGS_PATH', '/app/data/logs')
@@ -138,7 +138,7 @@ logging.basicConfig(
     level=getattr(logging, Config.LOG_LEVEL),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join(Config.LOGS_PATH, 'supermailer.log')),
+        logging.FileHandler(os.path.join(Config.LOGS_PATH, 'MailerX.log')),
         logging.StreamHandler()
     ]
 )
@@ -237,7 +237,7 @@ class StorageManager:
             },
             'email': {
                 'from_email': '',
-                'from_name': 'SuperMailer Pro',
+                'from_name': 'MailerX Pro',
                 'reply_to': '',
                 'bounce_address': ''
             },
@@ -749,7 +749,7 @@ class SMTPEmailSender:
             try:
                 # Create message
                 from_email_addr = from_email or email_config.get('from_email') or smtp_config.get('username')
-                from_name_str = from_name or email_config.get('from_name', 'SuperMailer Pro')
+                from_name_str = from_name or email_config.get('from_name', 'MailerX Pro')
                 
                 msg = MIMEMultipart('alternative')
                 msg['From'] = f"{from_name_str} <{from_email_addr}>"
@@ -1570,7 +1570,7 @@ def download_backup(backup_id):
         return send_file(
             backup_path,
             as_attachment=True,
-            download_name=f'supermailer_backup_{backup_id}.zip'
+            download_name=f'MailerX_backup_{backup_id}.zip'
         )
     return jsonify({'error': 'Backup not found'}), 404
 
@@ -1661,14 +1661,14 @@ def internal_error(e):
 if __name__ == '__main__':
     import argparse
     
-    parser = argparse.ArgumentParser(description='SuperMailer Pro')
+    parser = argparse.ArgumentParser(description='MailerX Pro')
     parser.add_argument('--host', default='0.0.0.0', help='Host to bind to')
     parser.add_argument('--port', type=int, default=5000, help='Port to bind to')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     
     args = parser.parse_args()
     
-    logger.info(f"Starting SuperMailer Pro on {args.host}:{args.port}")
+    logger.info(f"Starting MailerX Pro on {args.host}:{args.port}")
     
     app.run(
         host=args.host,
