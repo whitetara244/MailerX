@@ -1,4 +1,4 @@
-logs/mass_mailer_20260413_063611.log
+# Ignore log files, attachments, backups, blacklists, uploads, and specific static and template files
 /logs
 /attachments
 /backup
