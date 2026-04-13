@@ -1,0 +1,10 @@
+logs/mass_mailer_20260413_063611.log
+/logs
+/attachments
+/backup
+/blacklists
+/uploads
+static/1x1.png
+static/img/1x1.png
+templates/welcome.html
+config.json

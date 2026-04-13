@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperMailer Pro - Enterprise Email Marketing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #667eea; border-radius: 10px; }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 260px;
+            background: #1a1c23;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar.active { left: -260px; }
+
+        .logo {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .logo h2 {
+            color: white;
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .logo h2 i {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-right: 8px;
+        }
+
+        .logo p {
+            color: rgba(255,255,255,0.4);
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .nav-menu { padding: 16px 0; }
+
+        .nav-item {
+            padding: 10px 20px;
+            margin: 2px 0;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: linear-gradient(90deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.15) 100%);
+            color: white;
+            border-left: 3px solid #667eea;
+        }
+
+        .nav-item i { width: 28px; margin-right: 8px; font-size: 16px; }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            padding: 16px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .main-content.active { margin-left: 0; }
+
+        /* Top Bar */
+        .top-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-toggle {
+            display: none;
+            cursor: pointer;
+            font-size: 22px;
+            color: #667eea;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card-sm {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .stat-card-sm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .stat-icon-sm {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-icon-sm i {
+            font-size: 22px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .stat-content { flex: 1; }
+
+        .stat-value-sm {
+            font-size: 26px;
+            font-weight: 700;
+            color: #1a1c23;
+            line-height: 1.2;
+        }
+
+        .stat-label-sm {
+            color: #8a8f99;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .card-header h5 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1a1c23;
+        }
+
+        .card-header h5 i {
+            color: #667eea;
+            margin-right: 8px;
+        }
+
+        /* Progress Bar */
+        .progress-container { margin: 12px 0; }
+        .progress-bar-custom {
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+        }
+
+        /* Forms */
+        .form-group { margin-bottom: 16px; }
+        .form-label {
+            font-weight: 500;
+            color: #1a1c23;
+            font-size: 13px;
+            margin-bottom: 6px;
+            display: block;
+        }
+        .form-control, .form-select {
+            border: 1.5px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            width: 100%;
+            background: white;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.08);
+            outline: none;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+        }
+
+        .btn-danger { background: #f56565; color: white; }
+        .btn-success { background: #48bb78; color: white; }
+        .btn-warning { background: #ed8936; color: white; }
+        .btn-outline-primary {
+            background: transparent;
+            border: 1.5px solid #667eea;
+            color: #667eea;
+        }
+        .btn-outline-danger {
+            background: transparent;
+            border: 1.5px solid #f56565;
+            color: #f56565;
+        }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-lg { padding: 12px 24px; font-size: 14px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Tables */
+        .table-container { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: left;
+            padding: 12px;
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #1a1c23;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 11px;
+            display: inline-block;
+        }
+        .badge-success { background: #48bb78; color: white; }
+        .badge-danger { background: #f56565; color: white; }
+        .badge-warning { background: #ed8936; color: white; }
+        .badge-info { background: #4299e1; color: white; }
+        .badge-purple { background: #9f7aea; color: white; }
+
+        /* Dropzone */
+        .dropzone {
+            border: 1.5px dashed #cbd5e0;
+            border-radius: 10px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fafafa;
+        }
+        .dropzone:hover {
+            border-color: #667eea;
+            background: rgba(102,126,234,0.02);
+        }
+        .dropzone i { font-size: 36px; color: #a0aec0; }
+
+        /* Grid */
+        .row {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+        .col-md-3 { grid-column: span 3; }
+        .col-md-4 { grid-column: span 4; }
+        .col-md-5 { grid-column: span 5; }
+        .col-md-6 { grid-column: span 6; }
+        .col-md-7 { grid-column: span 7; }
+        .col-md-8 { grid-column: span 8; }
+        .col-md-12 { grid-column: span 12; }
+
+        /* Template Grid */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+        .template-card {
+            background: white;
+            border-radius: 10px;
+            padding: 16px;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s ease;
+        }
+        .template-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        .toast-custom {
+            background: white;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideInRight 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 280px;
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: auto;
+            animation: fadeInUp 0.3s ease;
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-body { padding: 20px; }
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .btn-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #8a8f99;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            color: #8a8f99;
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .tab:hover { color: #667eea; }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        /* Log Viewer */
+        .log-viewer {
+            background: #1e1e1e;
+            border-radius: 10px;
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+        }
+        .log-viewer pre {
+            margin: 0;
+            color: #d4d4d4;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .sidebar { left: -260px; }
+            .sidebar.active { left: 0; }
+            .main-content { margin-left: 0; }
+            .menu-toggle { display: block; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .row { grid-template-columns: repeat(12, 1fr); }
+            .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8 { grid-column: span 12; }
+            .template-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 576px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .template-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Utility */
+        .text-center { text-align: center; }
+        .text-muted { color: #8a8f99; }
+        .mt-1 { margin-top: 4px; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 16px; }
+        .mb-1 { margin-bottom: 4px; }
+        .mb-2 { margin-bottom: 8px; }
+        .mb-3 { margin-bottom: 16px; }
+        .p-3 { padding: 16px; }
+        .p-4 { padding: 24px; }
+        .w-100 { width: 100%; }
+        .d-flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .align-center { align-items: center; }
+        .gap-1 { gap: 4px; }
+        .gap-2 { gap: 8px; }
+        .gap-3 { gap: 16px; }
+        .flex-1 { flex: 1; }
+        .flex-wrap { flex-wrap: wrap; }
+
+        /* Alert */
+        .alert {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+        .alert-info {
+            background: #ebf8ff;
+            color: #2b6cb0;
+            border-left: 4px solid #4299e1;
+        }
+        .alert-success {
+            background: #f0fff4;
+            color: #276749;
+            border-left: 4px solid #48bb78;
+        }
+        .alert-warning {
+            background: #fffaf0;
+            color: #c05621;
+            border-left: 4px solid #ed8936;
+        }
+        .alert-danger {
+            background: #fff5f5;
+            color: #c53030;
+            border-left: 4px solid #f56565;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="logo">
+            <h2>
+                <i class="fas fa-envelope"></i>
+                SuperMailer
+            </h2>
+            <p>Enterprise Email Marketing</p>
+        </div>
+        <div class="nav-menu">
+            <div class="nav-item active" data-page="dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="nav-item" data-page="campaign">
+                <i class="fas fa-rocket"></i>
+                <span>Campaigns</span>
+            </div>
+            <div class="nav-item" data-page="templates">
+                <i class="fas fa-palette"></i>
+                <span>Templates</span>
+            </div>
+            <div class="nav-item" data-page="recipients">
+                <i class="fas fa-users"></i>
+                <span>Recipients</span>
+            </div>
+            <div class="nav-item" data-page="settings">
+                <i class="fas fa-cog"></i>
+                <span>SMTP Settings</span>
+            </div>
+            <div class="nav-item" data-page="blacklist">
+                <i class="fas fa-ban"></i>
+                <span>Blacklist</span>
+            </div>
+            <div class="nav-item" data-page="logs">
+                <i class="fas fa-history"></i>
+                <span>Logs</span>
+            </div>
+            <div class="nav-item" data-page="analytics">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics</span>
+            </div>
+            <div class="nav-item" data-page="backup">
+                <i class="fas fa-database"></i>
+                <span>Backup</span>
+            </div>
+        </div>
+        <div style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 20px;">
+            <div style="color: rgba(255,255,255,0.4); font-size: 11px; text-align: center;">
+                SuperMailer Pro v2.0<br>
+                © 2024 All Rights Reserved
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <div class="top-bar">
+            <div class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </div>
+            <div class="user-info">
+                <div class="user-badge">
+                    <i class="fas fa-server" style="color: #48bb78;"></i>
+                    <span id="smtpStatus">Checking SMTP...</span>
+                </div>
+                <div class="user-badge">
+                    <div class="user-avatar">M</div>
+                    <span>Marketing</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Content -->
+        <div id="pageContent"></div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Template Editor Modal -->
+    <div class="modal" id="templateModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5><i class="fas fa-code" style="color: #667eea; margin-right: 8px;"></i>Email Template Editor</h5>
+                <button type="button" class="btn-close" onclick="closeModal('templateModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Template Name</label>
+                    <input type="text" class="form-control" id="templateName" placeholder="e.g., welcome_email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">HTML Content</label>
+                    <textarea id="templateContent" rows="12" class="form-control" style="font-family: monospace; font-size: 12px;"></textarea>
+                    <small class="text-muted">Available: {{email}}, {{name}}, {{company}}, {{cta_url}}, {{unsubscribe_url}}</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-primary" onclick="closeModal('templateModal')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveTemplate()">Save Template</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Viewer Modal -->
+    <div class="modal" id="logModal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <div class="modal-header">
+                <h5><i class="fas fa-file-alt" style="color: #667eea; margin-right: 8px;"></i><span id="logModalTitle">Log Viewer</span></h5>
+                <button type="button" class="btn-close" onclick="closeModal('logModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="log-viewer">
+                    <pre id="logContent"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+        // Global variables
+        let currentPage = 'dashboard';
+        let campaignInterval = null;
+        let chart = null;
+        let smtpConfigured = false;
+        const API_BASE = '';
+
+        // Modal functions
+        function showModal(id) { document.getElementById(id).classList.add('show'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+        // Initialize
+        $(document).ready(function() {
+            checkSMTPStatus();
+            loadPage('dashboard');
+            
+            $('#menuToggle').click(function() {
+                $('#sidebar').toggleClass('active');
+                $('#mainContent').toggleClass('active');
+            });
+            
+            $('.nav-item').click(function() {
+                $('.nav-item').removeClass('active');
+                $(this).addClass('active');
+                loadPage($(this).data('page'));
+            });
+
+            $('.modal').click(function(e) {
+                if (e.target === this) closeModal(this.id);
+            });
+        });
+
+        function checkSMTPStatus() {
+            $.get(API_BASE + '/api/config', function(config) {
+                if (config && config.smtp && config.smtp.server && config.smtp.username) {
+                    smtpConfigured = true;
+                    $('#smtpStatus').html('<i class="fas fa-check-circle" style="color: #48bb78;"></i> SMTP Ready');
+                } else {
+                    smtpConfigured = false;
+                    $('#smtpStatus').html('<i class="fas fa-exclamation-triangle" style="color: #ed8936;"></i> SMTP Not Configured');
+                }
+            }).fail(function() {
+                $('#smtpStatus').html('<i class="fas fa-times-circle" style="color: #f56565;"></i> SMTP Error');
+            });
+        }
+        
+        function loadPage(page) {
+            currentPage = page;
+            if (campaignInterval) clearInterval(campaignInterval);
+            
+            switch(page) {
+                case 'dashboard': loadDashboard(); break;
+                case 'campaign': loadCampaignPage(); break;
+                case 'templates': loadTemplatesPage(); break;
+                case 'recipients': loadRecipientsPage(); break;
+                case 'settings': loadSettingsPage(); break;
+                case 'blacklist': loadBlacklistPage(); break;
+                case 'logs': loadLogsPage(); break;
+                case 'analytics': loadAnalyticsPage(); break;
+                case 'backup': loadBackupPage(); break;
+            }
+        }
+        
+        // ==================== DASHBOARD ====================
+        function loadDashboard() {
+            const html = `
+                <div class="stats-row">
+                    <div class="stat-card-sm">
+                        <div class="stat-icon-sm"><i class="fas fa-envelope"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value-sm" id="totalSent">0</div>
+                            <div class="stat-label-sm">Emails Sent</div>
+                        </div>
+                    </div>
+                    <div class="stat-card-sm">
+                        <div class="stat-icon-sm"><i class="fas fa-users"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value-sm" id="totalRecipients">0</div>
+                            <div class="stat-label-sm">Recipients</div>
+                        </div>
+                    </div>
+                    <div class="stat-card-sm">
+                        <div class="stat-icon-sm"><i class="fas fa-envelope-open"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value-sm" id="openRate">0%</div>
+                            <div class="stat-label-sm">Open Rate</div>
+                        </div>
+                    </div>
+                    <div class="stat-card-sm">
+                        <div class="stat-icon-sm"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value-sm" id="successRate">0%</div>
+                            <div class="stat-label-sm">Success Rate</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-chart-line"></i> Campaign Performance</h5>
+                            </div>
+                            <canvas id="performanceChart" style="height: 220px; width: 100%;"></canvas>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-play-circle"></i> Active Campaign</h5>
+                            </div>
+                            <div id="activeCampaignStatus">
+                                <div class="text-center" style="padding: 24px 0;">
+                                    <i class="fas fa-hourglass-half" style="font-size: 36px; color: #cbd5e0;"></i>
+                                    <p style="margin-top: 12px; color: #8a8f99;">No active campaign</p>
+                                    <button class="btn btn-primary mt-2" onclick="loadPage('campaign')">
+                                        <i class="fas fa-plus"></i> Start Campaign
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-history"></i> Recent Campaigns</h5>
+                        <button class="btn btn-outline-primary btn-sm" onclick="loadPage('campaign')">
+                            <i class="fas fa-plus"></i> New Campaign
+                        </button>
+                    </div>
+                    <div id="recentCampaignsList"></div>
+                </div>
+            `;
+            
+            $('#pageContent').html(html);
+            loadDashboardData();
+            campaignInterval = setInterval(loadDashboardData, 5000);
+        }
+        
+        function loadDashboardData() {
+            $.get(API_BASE + '/api/stats', function(response) {
+                const stats = response.campaigns || [];
+                const totals = response.totals || {};
+                
+                $('#totalSent').text((totals.emails_sent || 0).toLocaleString());
+                $('#successRate').text((totals.delivery_rate || 0) + '%');
+                $('#openRate').text((totals.open_rate || 0) + '%');
+                
+                if (chart) chart.destroy();
+                const ctx = document.getElementById('performanceChart')?.getContext('2d');
+                if (ctx && stats.length > 0) {
+                    chart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: stats.slice(0, 10).map(s => s.start_time ? new Date(s.start_time).toLocaleDateString() : ''),
+                            datasets: [{
+                                label: 'Emails Sent',
+                                data: stats.slice(0, 10).map(s => s.sent || 0),
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102,126,234,0.05)',
+                                tension: 0.3,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                }
+                
+                let html = '<div class="table-container"><table><thead><tr><th>Campaign</th><th>Date</th><th>Sent</th><th>Failed</th><th>Opened</th><th>Rate</th><th>Status</th></tr></thead><tbody>';
+                stats.slice(0, 5).forEach(s => {
+                    const total = (s.sent || 0) + (s.failed || 0);
+                    const rate = total > 0 ? ((s.sent || 0) / total * 100).toFixed(1) : 0;
+                    html += `<tr>
+                        <td>${s.campaign_id || '-'}</td>
+                        <td>${s.start_time ? new Date(s.start_time).toLocaleDateString() : '-'}</td>
+                        <td><span class="badge badge-success">${s.sent || 0}</span></td>
+                        <td><span class="badge badge-danger">${s.failed || 0}</span></td>
+                        <td><span class="badge badge-info">${s.opened || 0}</span></td>
+                        <td><span class="badge badge-purple">${rate}%</span></td>
+                        <td><span class="badge badge-${s.status === 'completed' ? 'success' : 'warning'}">${s.status || 'unknown'}</span></td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+                $('#recentCampaignsList').html(html || '<p class="text-center text-muted" style="padding: 20px;">No campaigns yet</p>');
+            });
+            
+            $.get(API_BASE + '/api/campaigns', function(data) {
+                const active = data.campaigns?.find(c => c.status === 'running' || c.status === 'paused');
+                if (active) {
+                    $('#activeCampaignStatus').html(`
+                        <div class="text-center" style="padding: 8px 0;">
+                            <i class="fas fa-${active.status === 'paused' ? 'pause-circle' : 'spinner fa-pulse'}" style="font-size: 32px; color: #667eea;"></i>
+                            <p style="margin-top: 8px; font-weight: 500;">${active.name || active.id}</p>
+                            <div class="progress-container">
+                                <div class="progress-bar-custom">
+                                    <div class="progress-fill" style="width: ${active.progress || 0}%"></div>
+                                </div>
+                            </div>
+                            <p style="font-size: 13px;">
+                                Sent: ${active.stats?.sent || 0} | Failed: ${active.stats?.failed || 0}
+                            </p>
+                            <div class="d-flex gap-2 justify-center" style="justify-content: center;">
+                                ${active.status === 'running' ? 
+                                    `<button class="btn btn-warning btn-sm" onclick="pauseCampaign('${active.id}')"><i class="fas fa-pause"></i> Pause</button>` :
+                                    `<button class="btn btn-success btn-sm" onclick="resumeCampaign('${active.id}')"><i class="fas fa-play"></i> Resume</button>`
+                                }
+                                <button class="btn btn-danger btn-sm" onclick="stopCampaign('${active.id}')"><i class="fas fa-stop"></i> Stop</button>
+                            </div>
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        // ==================== CAMPAIGN PAGE ====================
+        function loadCampaignPage() {
+            if (!smtpConfigured) {
+                const html = `
+                    <div class="card">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>SMTP not configured!</strong> Please configure your SMTP settings before starting a campaign.
+                        </div>
+                        <div class="text-center p-4">
+                            <button class="btn btn-primary" onclick="loadPage('settings')">
+                                <i class="fas fa-cog"></i> Go to SMTP Settings
+                            </button>
+                        </div>
+                    </div>
+                `;
+                $('#pageContent').html(html);
+                return;
+            }
+            
+            const html = `
+                <div class="tabs">
+                    <div class="tab active" data-tab="new">New Campaign</div>
+                    <div class="tab" data-tab="list">All Campaigns</div>
+                </div>
+                
+                <div id="tabNew">
+                    <div class="row">
+                        <div class="col-md-7">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-rocket"></i> Launch New Campaign</h5>
+                                </div>
+                                <form id="campaignForm">
+                                    <div class="form-group">
+                                        <label class="form-label">Campaign Name</label>
+                                        <input type="text" class="form-control" id="campaignName" placeholder="My Campaign">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Recipients CSV</label>
+                                        <select class="form-control" id="recipientsFile" required>
+                                            <option value="">Select file...</option>
+                                        </select>
+                                    </div>
+                                    <div class="dropzone" id="csvDropzone">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p style="margin-top: 8px;">Drop CSV or click to upload</p>
+                                        <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Email Template</label>
+                                        <select class="form-control" id="templateSelect" required>
+                                            <option value="">Select template...</option>
+                                        </select>
+                                        <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="showModal('templateModal'); resetTemplateModal();">
+                                            <i class="fas fa-plus"></i> New Template
+                                        </button>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Subject Line</label>
+                                        <input type="text" class="form-control" id="subjectLine" placeholder="Email subject" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Reply-To (optional)</label>
+                                        <input type="email" class="form-control" id="replyTo" placeholder="reply@example.com">
+                                    </div>
+                                    <div id="csvPreview" style="display: none;">
+                                        <hr>
+                                        <h6 style="font-size: 13px; margin-bottom: 10px;">Preview</h6>
+                                        <div class="table-container" style="max-height: 200px;">
+                                            <table id="previewTable">
+                                                <thead id="previewHead"></thead>
+                                                <tbody id="previewBody"></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-3">
+                                        <i class="fas fa-paper-plane"></i> Launch Campaign
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-lightbulb"></i> Tips</h5>
+                                </div>
+                                <div class="alert alert-info">
+                                    <strong>CSV Format:</strong><br>
+                                    Required: <strong>email</strong><br>
+                                    Optional: name, company, city
+                                </div>
+                                <ul style="padding-left: 20px; color: #4a5568; font-size: 13px; line-height: 1.8;">
+                                    <li>Use {{name}} for personalization</li>
+                                    <li>Keep subject under 50 chars</li>
+                                    <li>Test with small batches first</li>
+                                    <li>Monitor bounce rates</li>
+                                </ul>
+                            </div>
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-cog"></i> Campaign Settings</h5>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Rate Limit (emails/sec)</label>
+                                    <input type="number" class="form-control" id="rateLimitCampaign" value="5" min="1" max="50">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Batch Size</label>
+                                    <input type="number" class="form-control" id="batchSizeCampaign" value="50" min="10" max="500">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Parallel Workers</label>
+                                    <input type="number" class="form-control" id="parallelWorkersCampaign" value="3" min="1" max="10">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="tabList" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-list"></i> All Campaigns</h5>
+                            <button class="btn btn-outline-primary btn-sm" onclick="refreshCampaignsList()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                        <div id="campaignsList"></div>
+                    </div>
+                </div>
+            `;
+            
+            $('#pageContent').html(html);
+            
+            // Tab switching
+            $('.tab').click(function() {
+                $('.tab').removeClass('active');
+                $(this).addClass('active');
+                const tab = $(this).data('tab');
+                $('#tabNew, #tabList').hide();
+                if (tab === 'new') {
+                    $('#tabNew').show();
+                    loadRecipientFiles();
+                    loadTemplates();
+                } else {
+                    $('#tabList').show();
+                    refreshCampaignsList();
+                }
+            });
+            
+            loadRecipientFiles();
+            loadTemplates();
+            
+            // Setup dropzone
+            $('#csvDropzone').click(() => $('#csvFile').click());
+            $('#csvDropzone').on('dragover', (e) => { e.preventDefault(); $('#csvDropzone').css('border-color', '#667eea'); });
+            $('#csvDropzone').on('dragleave', () => $('#csvDropzone').css('border-color', '#cbd5e0'));
+            $('#csvDropzone').on('drop', function(e) {
+                e.preventDefault();
+                $(this).css('border-color', '#cbd5e0');
+                const file = e.originalEvent.dataTransfer.files[0];
+                if (file?.name.endsWith('.csv')) uploadCSV(file);
+                else showToast('Please upload a CSV file', 'error');
+            });
+            $('#csvFile').change(e => { if (e.target.files[0]) uploadCSV(e.target.files[0]); });
+            $('#campaignForm').submit(startCampaign);
+        }
+
+        function refreshCampaignsList() {
+            $.get(API_BASE + '/api/campaigns', function(data) {
+                let html = '<div class="table-container"><table><thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Sent</th><th>Failed</th><th>Progress</th><th>Actions</th></tr></thead><tbody>';
+                
+                (data.campaigns || []).forEach(c => {
+                    html += `<tr>
+                        <td>${c.id}</td>
+                        <td>${c.name || c.id}</td>
+                        <td><span class="badge badge-${c.status === 'completed' ? 'success' : c.status === 'running' ? 'info' : 'warning'}">${c.status}</span></td>
+                        <td>${c.stats?.sent || 0}</td>
+                        <td>${c.stats?.failed || 0}</td>
+                        <td>
+                            <div class="progress-bar-custom" style="width: 80px;">
+                                <div class="progress-fill" style="width: ${c.progress || 0}%"></div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                ${c.status === 'running' ? 
+                                    `<button class="btn btn-warning btn-sm" onclick="pauseCampaign('${c.id}')"><i class="fas fa-pause"></i></button>
+                                     <button class="btn btn-danger btn-sm" onclick="stopCampaign('${c.id}')"><i class="fas fa-stop"></i></button>` :
+                                    c.status === 'paused' ?
+                                    `<button class="btn btn-success btn-sm" onclick="resumeCampaign('${c.id}')"><i class="fas fa-play"></i></button>
+                                     <button class="btn btn-danger btn-sm" onclick="stopCampaign('${c.id}')"><i class="fas fa-stop"></i></button>` :
+                                    `<button class="btn btn-outline-primary btn-sm" onclick="viewCampaignResults('${c.id}')"><i class="fas fa-chart-bar"></i></button>`
+                                }
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                
+                html += '</tbody></table></div>';
+                $('#campaignsList').html(html || '<p class="text-center text-muted p-4">No campaigns found</p>');
+            });
+        }
+
+        function loadRecipientFiles() {
+            $.get(API_BASE + '/api/recipient-files', function(files) {
+                const select = $('#recipientsFile');
+                select.empty().append('<option value="">Select file...</option>');
+                files.forEach(f => select.append(`<option value="${f.name}">${f.display_name || f.name} (${f.size_mb} MB)</option>`));
+            });
+        }
+
+        function uploadCSV(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            $.ajax({
+                url: API_BASE + '/api/upload-csv',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    showToast(`Uploaded ${data.valid_rows} valid recipients (${data.invalid_rows} invalid)`, 'success');
+                    loadRecipientFiles();
+                    
+                    if (data.preview?.length) {
+                        $('#csvPreview').show();
+                        const headers = Object.keys(data.preview[0]);
+                        $('#previewHead').html('<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>');
+                        $('#previewBody').html(data.preview.map(row => 
+                            '<tr>' + headers.map(h => `<td>${row[h] || ''}</td>`).join('') + '</tr>'
+                        ).join(''));
+                        $('#recipientsFile').val(data.cleaned_filename || data.filename);
+                    }
+                },
+                error: xhr => showToast(xhr.responseJSON?.error || 'Upload failed', 'error')
+            });
+        }
+
+        function loadTemplates() {
+            $.get(API_BASE + '/api/templates', function(templates) {
+                const select = $('#templateSelect');
+                select.empty().append('<option value="">Select template...</option>');
+                templates.forEach(t => select.append(`<option value="${t.name}">${t.name}</option>`));
+            });
+        }
+
+        function startCampaign(e) {
+            e.preventDefault();
+            
+            if (!smtpConfigured) {
+                showToast('Please configure SMTP settings first', 'error');
+                loadPage('settings');
+                return;
+            }
+            
+            const data = {
+                campaign_name: $('#campaignName').val() || `Campaign_${new Date().toISOString().slice(0,10)}`,
+                recipients_file: $('#recipientsFile').val(),
+                template: $('#templateSelect').val(),
+                subject: $('#subjectLine').val(),
+                reply_to: $('#replyTo').val(),
+                rate_limit: parseInt($('#rateLimitCampaign').val()) || 5,
+                batch_size: parseInt($('#batchSizeCampaign').val()) || 50,
+                parallel_workers: parseInt($('#parallelWorkersCampaign').val()) || 3
+            };
+            
+            if (!data.recipients_file || !data.template || !data.subject) {
+                showToast('Please fill all required fields', 'error');
+                return;
+            }
+            
+            $.ajax({
+                url: API_BASE + '/api/campaign/start',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function(resp) {
+                    showToast(`Campaign launched! ID: ${resp.campaign_id}`, 'success');
+                    setTimeout(() => loadPage('dashboard'), 1500);
+                },
+                error: xhr => showToast(xhr.responseJSON?.error || 'Failed to start campaign', 'error')
+            });
+        }
+
+        function pauseCampaign(id) {
+            $.ajax({
+                url: API_BASE + '/api/campaign/' + id + '/pause',
+                type: 'POST',
+                success: function() {
+                    showToast('Campaign paused', 'warning');
+                    if (currentPage === 'campaign') refreshCampaignsList();
+                    loadDashboardData();
+                }
+            });
+        }
+
+        function resumeCampaign(id) {
+            $.ajax({
+                url: API_BASE + '/api/campaign/' + id + '/resume',
+                type: 'POST',
+                success: function() {
+                    showToast('Campaign resumed', 'success');
+                    if (currentPage === 'campaign') refreshCampaignsList();
+                    loadDashboardData();
+                }
+            });
+        }
+
+        function stopCampaign(id) {
+            if (!confirm('Stop this campaign?')) return;
+            $.ajax({
+                url: API_BASE + '/api/campaign/' + id + '/stop',
+                type: 'POST',
+                success: function() {
+                    showToast('Campaign stopped', 'warning');
+                    if (currentPage === 'campaign') refreshCampaignsList();
+                    loadDashboardData();
+                }
+            });
+        }
+
+        function viewCampaignResults(id) {
+            $.get(API_BASE + '/api/campaign/' + id + '/results', function(data) {
+                const html = `
+                    <div class="modal show" id="resultsModal">
+                        <div class="modal-content" style="max-width: 600px;">
+                            <div class="modal-header">
+                                <h5>Campaign Results: ${id}</h5>
+                                <button class="btn-close" onclick="$('#resultsModal').remove()">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Total:</strong> ${data.summary?.total || 0}</p>
+                                <p><strong>Sent:</strong> ${data.summary?.sent || 0}</p>
+                                <p><strong>Failed:</strong> ${data.summary?.failed || 0}</p>
+                                <p><strong>Success Rate:</strong> ${data.summary?.success_rate || 0}%</p>
+                                ${data.errors ? '<p><strong>Errors:</strong></p><ul>' + Object.entries(data.errors).map(([k,v]) => `<li>${k}: ${v}</li>`).join('') + '</ul>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                $('body').append(html);
+            }).fail(() => showToast('Results not available', 'error'));
+        }
+
+        // ==================== TEMPLATES PAGE ====================
+        function loadTemplatesPage() {
+            const html = `
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-palette"></i> Email Templates</h5>
+                        <button class="btn btn-primary btn-sm" onclick="showModal('templateModal'); resetTemplateModal();">
+                            <i class="fas fa-plus"></i> Create Template
+                        </button>
+                    </div>
+                    <div id="templatesList"></div>
+                </div>
+            `;
+            $('#pageContent').html(html);
+            refreshTemplatesList();
+        }
+
+        function refreshTemplatesList() {
+            $.get(API_BASE + '/api/templates', function(templates) {
+                let html = '<div class="template-grid">';
+                templates.forEach(t => {
+                    html += `
+                        <div class="template-card">
+                            <h6><i class="fas fa-file-code" style="color: #667eea;"></i> ${t.name}</h6>
+                            <p class="text-muted" style="font-size: 11px;">Modified: ${new Date(t.modified).toLocaleString()}</p>
+                            <p class="text-muted" style="font-size: 11px;">Size: ${t.size_kb} KB</p>
+                            <div class="actions d-flex gap-2 mt-2">
+                                <button class="btn btn-outline-primary btn-sm" onclick="editTemplate('${t.name}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-outline-primary btn-sm" onclick="previewTemplate('${t.name}')">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteTemplate('${t.name}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                $('#templatesList').html(html || '<p class="text-center text-muted p-4">No templates yet. Create your first template!</p>');
+            });
+        }
+
+        function editTemplate(name) {
+            $.get(API_BASE + '/api/templates/' + name, function(data) {
+                $('#templateName').val(data.name);
+                $('#templateContent').val(data.content);
+                showModal('templateModal');
+            });
+        }
+
+        function previewTemplate(name) {
+            window.open(API_BASE + '/api/templates/' + name + '/preview', '_blank');
+        }
+
+        function deleteTemplate(name) {
+            if (!confirm('Delete this template?')) return;
+            $.ajax({
+                url: API_BASE + '/api/templates/' + name,
+                type: 'DELETE',
+                success: function() {
+                    showToast('Template deleted', 'success');
+                    refreshTemplatesList();
+                    if (currentPage === 'campaign') loadTemplates();
+                }
+            });
+        }
+
+        function saveTemplate() {
+            const name = $('#templateName').val().trim();
+            const content = $('#templateContent').val();
+            
+            if (!name) {
+                showToast('Template name required', 'error');
+                return;
+            }
+            
+            $.ajax({
+                url: API_BASE + '/api/templates',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ name, content }),
+                success: function() {
+                    showToast('Template saved!', 'success');
+                    closeModal('templateModal');
+                    refreshTemplatesList();
+                    if (currentPage === 'campaign') loadTemplates();
+                },
+                error: xhr => showToast(xhr.responseJSON?.message || 'Save failed', 'error')
+            });
+        }
+
+        function resetTemplateModal() {
+            $('#templateName').val('');
+            $('#templateContent').val(`<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 30px; text-align: center; }
+        .content { padding: 30px; background: #f9f9f9; }
+        .button { display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Hello {{name}}!</h1>
+        </div>
+        <div class="content">
+            <p>Thank you for being part of our community.</p>
+            <p>Your email: {{email}}</p>
+            <p>Company: {{company}}</p>
+            <a href="{{cta_url}}" class="button">Learn More</a>
+        </div>
+    </div>
+</body>
+</html>`);
+        }
+
+        // ==================== RECIPIENTS PAGE ====================
+        function loadRecipientsPage() {
+            const html = `
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-users"></i> Recipient Lists</h5>
+                    </div>
+                    <div class="dropzone" id="uploadDropzone" style="margin-bottom: 20px;">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Upload CSV file with recipients</p>
+                        <p class="text-muted" style="font-size: 12px;">Required column: email</p>
+                        <input type="file" id="recipientCSV" accept=".csv">
+                    </div>
+                    <div id="recipientsList"></div>
+                </div>
+            `;
+            $('#pageContent').html(html);
+            loadRecipientFilesList();
+            
+            $('#recipientCSV').change(e => { 
+                if (e.target.files[0]) {
+                    uploadCSV(e.target.files[0]);
+                    setTimeout(loadRecipientFilesList, 1000);
+                }
+            });
+        }
+
+        function loadRecipientFilesList() {
+            $.get(API_BASE + '/api/recipient-files', function(files) {
+                let html = '<div class="table-container"><table><thead><tr><th>File</th><th>Size</th><th>Modified</th><th>Actions</th></tr></thead><tbody>';
+                files.forEach(f => {
+                    html += `<tr>
+                        <td><i class="fas fa-file-csv" style="color: #48bb78;"></i> ${f.display_name || f.name}</td>
+                        <td>${f.size_mb} MB</td>
+                        <td>${new Date(f.modified).toLocaleString()}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-outline-primary btn-sm" onclick="useFileForCampaign('${f.name}')">
+                                    <i class="fas fa-rocket"></i> Use
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteRecipientFile('${f.name}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                html += '</tbody></table></div>';
+                $('#recipientsList').html(html || '<p class="text-center text-muted p-4">No files uploaded yet</p>');
+            });
+        }
+
+        function useFileForCampaign(filename) {
+            loadPage('campaign');
+            setTimeout(() => {
+                $('#recipientsFile').val(filename);
+                showToast('File selected for campaign', 'success');
+            }, 300);
+        }
+
+        function deleteRecipientFile(filename) {
+            if (!confirm('Delete this file?')) return;
+            $.ajax({
+                url: API_BASE + '/api/recipient-files/' + filename,
+                type: 'DELETE',
+                success: function() {
+                    showToast('File deleted', 'success');
+                    loadRecipientFilesList();
+                }
+            });
+        }
+
+        // ==================== SETTINGS PAGE ====================
+        function loadSettingsPage() {
+            $.get(API_BASE + '/api/config', function(config) {
+                const html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-server"></i> SMTP Configuration</h5>
+                                    <span id="smtpTestStatus"></span>
+                                </div>
+                                <form id="smtpForm">
+                                    <div class="form-group">
+                                        <label class="form-label">SMTP Server</label>
+                                        <input type="text" class="form-control" id="smtpServer" value="${config?.smtp?.server || ''}" placeholder="smtp.gmail.com">
+                                    </div>
+                                    <div class="row" style="gap: 16px;">
+                                        <div class="col-md-6" style="padding: 0;">
+                                            <label class="form-label">Port</label>
+                                            <input type="number" class="form-control" id="smtpPort" value="${config?.smtp?.port || 587}">
+                                        </div>
+                                        <div class="col-md-6" style="padding: 0;">
+                                            <label class="form-label">Timeout (sec)</label>
+                                            <input type="number" class="form-control" id="smtpTimeout" value="${config?.smtp?.timeout || 30}">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Username</label>
+                                        <input type="text" class="form-control" id="smtpUsername" value="${config?.smtp?.username || ''}" placeholder="your@email.com">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Password</label>
+                                        <input type="password" class="form-control" id="smtpPassword" placeholder="${config?.smtp?.password ? '••••••••' : 'Enter password'}">
+                                    </div>
+                                    <div class="d-flex gap-3 mb-3">
+                                        <label><input type="checkbox" id="useTLS" ${config?.smtp?.use_tls !== false ? 'checked' : ''}> Use TLS</label>
+                                        <label><input type="checkbox" id="useSSL" ${config?.smtp?.use_ssl ? 'checked' : ''}> Use SSL</label>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Max Retries</label>
+                                        <input type="number" class="form-control" id="maxRetries" value="${config?.smtp?.max_retries || 3}">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Retry Delay (sec)</label>
+                                        <input type="number" class="form-control" id="retryDelay" value="${config?.smtp?.retry_delay || 5}">
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-envelope"></i> Email Settings</h5>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">From Email</label>
+                                    <input type="email" class="form-control" id="fromEmail" value="${config?.email?.from_email || ''}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">From Name</label>
+                                    <input type="text" class="form-control" id="fromName" value="${config?.email?.from_name || 'SuperMailer Pro'}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Reply-To Email</label>
+                                    <input type="email" class="form-control" id="replyToEmail" value="${config?.email?.reply_to || ''}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Bounce Address</label>
+                                    <input type="email" class="form-control" id="bounceAddress" value="${config?.email?.bounce_address || ''}">
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-sliders-h"></i> Default Campaign Settings</h5>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Rate Limit (emails/sec)</label>
+                                    <input type="number" class="form-control" id="rateLimit" value="${config?.campaign?.rate_limit || 5}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Max per Batch</label>
+                                    <input type="number" class="form-control" id="batchSize" value="${config?.campaign?.max_emails_per_batch || 50}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Parallel Workers</label>
+                                    <input type="number" class="form-control" id="parallelWorkers" value="${config?.campaign?.parallel_workers || 3}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Max Emails per Hour</label>
+                                    <input type="number" class="form-control" id="maxPerHour" value="${config?.campaign?.max_emails_per_hour || 500}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Max Emails per Day</label>
+                                    <input type="number" class="form-control" id="maxPerDay" value="${config?.campaign?.max_emails_per_day || 5000}">
+                                </div>
+                                <div class="d-flex gap-3 mb-3">
+                                    <label><input type="checkbox" id="enableTracking" ${config?.campaign?.enable_tracking !== false ? 'checked' : ''}> Enable Tracking</label>
+                                    <label><input type="checkbox" id="enableUnsubscribe" ${config?.campaign?.enable_unsubscribe !== false ? 'checked' : ''}> Enable Unsubscribe</label>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-question-circle"></i> SMTP Provider Examples</h5>
+                                </div>
+                                <div class="alert alert-info">
+                                    <strong>Gmail:</strong> smtp.gmail.com:587 (Use App Password)<br>
+                                    <strong>Outlook:</strong> smtp-mail.outlook.com:587<br>
+                                    <strong>SendGrid:</strong> smtp.sendgrid.net:587<br>
+                                    <strong>AWS SES:</strong> email-smtp.us-east-1.amazonaws.com:587<br>
+                                    <strong>Mailgun:</strong> smtp.mailgun.org:587
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success" onclick="testSMTP()">
+                                <i class="fas fa-vial"></i> Test SMTP Connection
+                            </button>
+                            <button class="btn btn-primary" onclick="saveAllSettings()">
+                                <i class="fas fa-save"></i> Save All Settings
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                $('#pageContent').html(html);
+                $('#smtpForm').submit(e => e.preventDefault());
+            });
+        }
+
+        function testSMTP() {
+            const config = {
+                smtp: {
+                    server: $('#smtpServer').val(),
+                    port: parseInt($('#smtpPort').val()) || 587,
+                    username: $('#smtpUsername').val(),
+                    password: $('#smtpPassword').val(),
+                    use_tls: $('#useTLS').is(':checked'),
+                    use_ssl: $('#useSSL').is(':checked'),
+                    timeout: parseInt($('#smtpTimeout').val()) || 30
+                },
+                email: {
+                    from_email: $('#fromEmail').val() || $('#smtpUsername').val()
+                }
+            };
+            
+            if (!config.smtp.server || !config.smtp.username) {
+                showToast('Server and username required', 'error');
+                return;
+            }
+            
+            $('#smtpTestStatus').html('<i class="fas fa-spinner fa-pulse"></i> Testing...');
+            
+            $.ajax({
+                url: API_BASE + '/api/test-smtp',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(config),
+                success: function(data) {
+                    if (data.success) {
+                        $('#smtpTestStatus').html('<i class="fas fa-check-circle" style="color: #48bb78;"></i> Connected!');
+                        showToast(data.message, 'success');
+                        smtpConfigured = true;
+                        $('#smtpStatus').html('<i class="fas fa-check-circle" style="color: #48bb78;"></i> SMTP Ready');
+                    } else {
+                        $('#smtpTestStatus').html('<i class="fas fa-times-circle" style="color: #f56565;"></i> Failed');
+                        showToast(data.message, 'error');
+                    }
+                },
+                error: function(xhr) {
+                    $('#smtpTestStatus').html('<i class="fas fa-times-circle" style="color: #f56565;"></i> Failed');
+                    showToast(xhr.responseJSON?.message || 'Connection failed', 'error');
+                }
+            });
+        }
+
+        function saveAllSettings() {
+            const config = {
+                smtp: {
+                    server: $('#smtpServer').val(),
+                    port: parseInt($('#smtpPort').val()) || 587,
+                    username: $('#smtpUsername').val(),
+                    password: $('#smtpPassword').val(),
+                    use_tls: $('#useTLS').is(':checked'),
+                    use_ssl: $('#useSSL').is(':checked'),
+                    timeout: parseInt($('#smtpTimeout').val()) || 30,
+                    max_retries: parseInt($('#maxRetries').val()) || 3,
+                    retry_delay: parseInt($('#retryDelay').val()) || 5
+                },
+                email: {
+                    from_email: $('#fromEmail').val(),
+                    from_name: $('#fromName').val(),
+                    reply_to: $('#replyToEmail').val(),
+                    bounce_address: $('#bounceAddress').val()
+                },
+                campaign: {
+                    rate_limit: parseInt($('#rateLimit').val()) || 5,
+                    max_emails_per_batch: parseInt($('#batchSize').val()) || 50,
+                    parallel_workers: parseInt($('#parallelWorkers').val()) || 3,
+                    max_emails_per_hour: parseInt($('#maxPerHour').val()) || 500,
+                    max_emails_per_day: parseInt($('#maxPerDay').val()) || 5000,
+                    enable_tracking: $('#enableTracking').is(':checked'),
+                    enable_unsubscribe: $('#enableUnsubscribe').is(':checked')
+                }
+            };
+            
+            $.ajax({
+                url: API_BASE + '/api/config',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(config),
+                success: function() {
+                    showToast('Settings saved successfully!', 'success');
+                    checkSMTPStatus();
+                },
+                error: function() {
+                    showToast('Failed to save settings', 'error');
+                }
+            });
+        }
+
+        // ==================== BLACKLIST PAGE ====================
+        function loadBlacklistPage() {
+            const html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-ban"></i> Add to Blacklist</h5>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email Address(es)</label>
+                                <textarea class="form-control" id="blacklistEmails" rows="4" placeholder="Enter emails (one per line or comma separated)"></textarea>
+                            </div>
+                            <button class="btn btn-primary" onclick="addToBlacklist()">
+                                <i class="fas fa-plus"></i> Add to Blacklist
+                            </button>
+                            <hr>
+                            <div class="dropzone" id="blacklistDropzone" style="margin-top: 16px;">
+                                <i class="fas fa-file-import"></i>
+                                <p>Import CSV with email column</p>
+                                <input type="file" id="blacklistCSV" accept=".csv">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-list"></i> Blacklisted Emails</h5>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="exportBlacklist()">
+                                        <i class="fas fa-download"></i> Export
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm" onclick="refreshBlacklist()">
+                                        <i class="fas fa-sync-alt"></i> Refresh
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" class="form-control" id="blacklistSearch" placeholder="Search emails...">
+                            </div>
+                            <div id="blacklistContent"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            $('#pageContent').html(html);
+            refreshBlacklist();
+            
+            $('#blacklistCSV').change(function(e) {
+                if (e.target.files[0]) importBlacklist(e.target.files[0]);
+            });
+            
+            $('#blacklistSearch').on('input', function() {
+                refreshBlacklist($(this).val());
+            });
+        }
+
+        function refreshBlacklist(search = '') {
+            $.get(API_BASE + '/api/blacklist?search=' + encodeURIComponent(search), function(data) {
+                let html = '<div style="max-height: 400px; overflow-y: auto;">';
+                if (data.items && data.items.length > 0) {
+                    data.items.forEach(email => {
+                        html += `
+                            <div style="padding: 8px 12px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">
+                                <span><i class="fas fa-envelope" style="color: #f56565; margin-right: 8px;"></i>${email}</span>
+                                <button class="btn btn-outline-danger btn-sm" onclick="removeFromBlacklist('${email}')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        `;
+                    });
+                    html += `<div style="padding: 12px; text-align: center; color: #8a8f99;">Total: ${data.total} blacklisted emails</div>`;
+                } else {
+                    html += '<p class="text-center text-muted p-4">No blacklisted emails</p>';
+                }
+                html += '</div>';
+                $('#blacklistContent').html(html);
+            });
+        }
+
+        function addToBlacklist() {
+            const text = $('#blacklistEmails').val();
+            const emails = text.split(/[,\n]+/).map(e => e.trim()).filter(e => e.includes('@'));
+            
+            if (emails.length === 0) {
+                showToast('No valid emails found', 'error');
+                return;
+            }
+            
+            $.ajax({
+                url: API_BASE + '/api/blacklist',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ emails }),
+                success: function(data) {
+                    showToast(`Added ${data.added} email(s) to blacklist`, 'success');
+                    $('#blacklistEmails').val('');
+                    refreshBlacklist();
+                }
+            });
+        }
+
+        function removeFromBlacklist(email) {
+            $.ajax({
+                url: API_BASE + '/api/blacklist',
+                type: 'DELETE',
+                contentType: 'application/json',
+                data: JSON.stringify({ emails: [email] }),
+                success: function() {
+                    showToast('Removed from blacklist', 'success');
+                    refreshBlacklist();
+                }
+            });
+        }
+
+        function importBlacklist(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            $.ajax({
+                url: API_BASE + '/api/blacklist/import',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    showToast(`Imported ${data.new} new emails (${data.total} total)`, 'success');
+                    refreshBlacklist();
+                }
+            });
+        }
+
+        function exportBlacklist() {
+            window.open(API_BASE + '/api/blacklist/export', '_blank');
+        }
+
+        // ==================== LOGS PAGE ====================
+        function loadLogsPage() {
+            const html = `
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-history"></i> System & Campaign Logs</h5>
+                        <button class="btn btn-outline-primary btn-sm" onclick="refreshLogs()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div id="logsList"></div>
+                </div>
+            `;
+            $('#pageContent').html(html);
+            refreshLogs();
+        }
+
+        function refreshLogs() {
+            $.get(API_BASE + '/api/logs', function(logs) {
+                let html = '<div class="table-container"><table><thead><tr><th>File</th><th>Type</th><th>Size</th><th>Modified</th><th>Actions</th></tr></thead><tbody>';
+                
+                logs.forEach(l => {
+                    html += `<tr>
+                        <td><i class="fas fa-file-alt"></i> ${l.name}</td>
+                        <td><span class="badge badge-${l.type === 'campaign' ? 'info' : 'purple'}">${l.type}</span></td>
+                        <td>${l.size_kb} KB</td>
+                        <td>${new Date(l.modified).toLocaleString()}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-outline-primary btn-sm" onclick="viewLog('${l.name}')">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteLog('${l.name}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+                
+                html += '</tbody></table></div>';
+                $('#logsList').html(html || '<p class="text-center text-muted p-4">No logs found</p>');
+            });
+        }
+
+        function viewLog(filename) {
+            $.get(API_BASE + '/api/logs/' + filename + '?lines=1000', function(data) {
+                $('#logModalTitle').text(data.name);
+                $('#logContent').text(data.content);
+                showModal('logModal');
+            });
+        }
+
+        function deleteLog(filename) {
+            if (!confirm('Delete this log file?')) return;
+            $.ajax({
+                url: API_BASE + '/api/logs/' + filename,
+                type: 'DELETE',
+                success: function() {
+                    showToast('Log deleted', 'success');
+                    refreshLogs();
+                }
+            });
+        }
+
+        // ==================== ANALYTICS PAGE ====================
+        function loadAnalyticsPage() {
+            const html = `
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-bar"></i> Analytics Dashboard</h5>
+                        <button class="btn btn-outline-primary btn-sm" onclick="exportStats()">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                    <div id="analyticsContent">
+                        <div class="stats-row">
+                            <div class="stat-card-sm">
+                                <div class="stat-icon-sm"><i class="fas fa-envelope"></i></div>
+                                <div class="stat-content">
+                                    <div class="stat-value-sm" id="analyticsTotalSent">0</div>
+                                    <div class="stat-label-sm">Total Sent</div>
+                                </div>
+                            </div>
+                            <div class="stat-card-sm">
+                                <div class="stat-icon-sm"><i class="fas fa-envelope-open"></i></div>
+                                <div class="stat-content">
+                                    <div class="stat-value-sm" id="analyticsOpenRate">0%</div>
+                                    <div class="stat-label-sm">Open Rate</div>
+                                </div>
+                            </div>
+                            <div class="stat-card-sm">
+                                <div class="stat-icon-sm"><i class="fas fa-mouse-pointer"></i></div>
+                                <div class="stat-content">
+                                    <div class="stat-value-sm" id="analyticsClickRate">0%</div>
+                                    <div class="stat-label-sm">Click Rate</div>
+                                </div>
+                            </div>
+                            <div class="stat-card-sm">
+                                <div class="stat-icon-sm"><i class="fas fa-rocket"></i></div>
+                                <div class="stat-content">
+                                    <div class="stat-value-sm" id="analyticsTotalCampaigns">0</div>
+                                    <div class="stat-label-sm">Campaigns</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h6 style="margin-bottom: 16px;">Daily Sending Volume</h6>
+                            <canvas id="dailyChart" style="height: 200px;"></canvas>
+                        </div>
+                        
+                        <h6 style="margin: 16px 0;">Campaign Performance</h6>
+                        <div id="analyticsTable"></div>
+                    </div>
+                </div>
+            `;
+            
+            $('#pageContent').html(html);
+            
+            $.get(API_BASE + '/api/analytics', function(data) {
+                $('#analyticsTotalCampaigns').text(data.total_campaigns || 0);
+                
+                // Daily chart
+                const daily = data.daily_stats || {};
+                const ctx = document.getElementById('dailyChart')?.getContext('2d');
+                if (ctx) {
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(daily).slice(-14),
+                            datasets: [{
+                                label: 'Emails Sent',
+                                data: Object.values(daily).map(d => d.sent || 0).slice(-14),
+                                backgroundColor: '#667eea'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true
+                        }
+                    });
+                }
+            });
+            
+            $.get(API_BASE + '/api/stats', function(response) {
+                const totals = response.totals || {};
+                $('#analyticsTotalSent').text((totals.emails_sent || 0).toLocaleString());
+                $('#analyticsOpenRate').text((totals.open_rate || 0) + '%');
+                $('#analyticsClickRate').text((totals.click_rate || 0) + '%');
+                
+                const campaigns = response.campaigns || [];
+                let html = '<div class="table-container"><table><thead><tr><th>Campaign</th><th>Date</th><th>Sent</th><th>Opened</th><th>Clicked</th><th>Success</th><th>Open Rate</th></tr></thead><tbody>';
+                
+                campaigns.slice(0, 20).forEach(c => {
+                    const successRate = c.total ? ((c.sent / c.total) * 100).toFixed(1) : 0;
+                    const openRate = c.sent ? ((c.opened / c.sent) * 100).toFixed(1) : 0;
+                    html += `<tr>
+                        <td>${c.campaign_id || '-'}</td>
+                        <td>${c.start_time ? new Date(c.start_time).toLocaleDateString() : '-'}</td>
+                        <td>${c.sent || 0}</td>
+                        <td>${c.opened || 0}</td>
+                        <td>${c.clicked || 0}</td>
+                        <td>${successRate}%</td>
+                        <td>${openRate}%</td>
+                    </tr>`;
+                });
+                
+                html += '</tbody></table></div>';
+                $('#analyticsTable').html(html);
+            });
+        }
+
+        function exportStats() {
+            window.open(API_BASE + '/api/export-stats', '_blank');
+        }
+
+        // ==================== BACKUP PAGE ====================
+        function loadBackupPage() {
+            const html = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-database"></i> Create Backup</h5>
+                            </div>
+                            <p class="mb-3">Create a backup of all your data including templates, stats, and configuration.</p>
+                            <button class="btn btn-primary btn-lg w-100" onclick="createBackup()">
+                                <i class="fas fa-archive"></i> Create Backup Now
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-list"></i> Available Backups</h5>
+                                <button class="btn btn-outline-primary btn-sm" onclick="refreshBackups()">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div id="backupsList"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-info-circle"></i> System Information</h5>
+                    </div>
+                    <div id="systemInfo"></div>
+                </div>
+            `;
+            
+            $('#pageContent').html(html);
+            refreshBackups();
+            loadSystemInfo();
+        }
+
+        function createBackup() {
+            $.ajax({
+                url: API_BASE + '/api/backup',
+                type: 'POST',
+                success: function(data) {
+                    showToast(`Backup created! Size: ${data.size_mb} MB`, 'success');
+                    refreshBackups();
+                },
+                error: function() {
+                    showToast('Backup failed', 'error');
+                }
+            });
+        }
+
+        function refreshBackups() {
+            $.get(API_BASE + '/api/backups', function(backups) {
+                let html = '<div style="max-height: 300px; overflow-y: auto;">';
+                
+                backups.forEach(b => {
+                    html += `
+                        <div style="padding: 12px; border-bottom: 1px solid #e9ecef; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${b.id}</strong><br>
+                                <small class="text-muted">${new Date(b.created).toLocaleString()} - ${b.size_mb} MB</small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="${API_BASE}/api/backup/${b.id}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteBackup('${b.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                $('#backupsList').html(html || '<p class="text-center text-muted p-4">No backups found</p>');
+            });
+        }
+
+        function deleteBackup(id) {
+            if (!confirm('Delete this backup?')) return;
+            $.ajax({
+                url: API_BASE + '/api/backup/' + id,
+                type: 'DELETE',
+                success: function() {
+                    showToast('Backup deleted', 'success');
+                    refreshBackups();
+                }
+            });
+        }
+
+        function loadSystemInfo() {
+            $.get(API_BASE + '/api/system/info', function(info) {
+                const html = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Platform:</strong> ${info.system?.platform || 'Unknown'}<br>
+                            <strong>Python:</strong> ${info.system?.python_version || 'Unknown'}<br>
+                            <strong>CPU Cores:</strong> ${info.system?.cpu_count || 0}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Memory:</strong> ${(info.system?.memory?.percent_used || 0)}% used<br>
+                            <strong>Disk:</strong> ${(info.system?.disk?.percent_used || 0)}% used<br>
+                            <strong>Free Space:</strong> ${info.system?.disk?.free ? (info.system.disk.free / 1024 / 1024 / 1024).toFixed(1) : 0} GB
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Active Campaigns:</strong> ${info.app?.active_campaigns || 0}<br>
+                            <strong>Uploaded Files:</strong> ${info.app?.uploaded_files || 0}<br>
+                            <strong>Templates:</strong> ${info.app?.templates || 0}<br>
+                            <strong>Total Campaigns:</strong> ${info.app?.total_campaigns || 0}
+                        </div>
+                    </div>
+                `;
+                $('#systemInfo').html(html);
+            }).fail(() => {
+                $('#systemInfo').html('<p class="text-muted">System info not available</p>');
+            });
+        }
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function showToast(message, type = 'info') {
+            const icons = { 
+                success: 'fa-check-circle', 
+                error: 'fa-exclamation-circle', 
+                warning: 'fa-exclamation-triangle', 
+                info: 'fa-info-circle' 
+            };
+            const colors = { 
+                success: '#48bb78', 
+                error: '#f56565', 
+                warning: '#ed8936', 
+                info: '#4299e1' 
+            };
+            
+            const toast = $(`
+                <div class="toast-custom" style="border-left: 4px solid ${colors[type]};">
+                    <i class="fas ${icons[type]}" style="color: ${colors[type]};"></i>
+                    <div style="flex: 1;">${message}</div>
+                    <i class="fas fa-times" style="cursor: pointer; color: #a0aec0;" onclick="$(this).closest('.toast-custom').remove()"></i>
+                </div>
+            `);
+            
+            $('#toastContainer').append(toast);
+            setTimeout(() => toast.fadeOut(300, () => toast.remove()), 4000);
+        }
+    </script>
+</body>
+</html>
