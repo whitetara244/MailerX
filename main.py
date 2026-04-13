@@ -1,4 +1,4 @@
-# main.py - Fixed production version
+# main.py - Fixed production version (no syntax errors)
 """
 SuperMailer Pro - Production Grade Email Marketing System
 Designed for 50k+ email campaigns with enterprise security and scalability
@@ -20,6 +20,8 @@ import logging
 import tempfile
 import csv
 import io
+import re
+import platform
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
@@ -70,6 +72,14 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders, utils
+
+# Try to import psutil (optional)
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    psutil = None
 
 # ==================== Environment Configuration ====================
 @dataclass
@@ -238,7 +248,9 @@ class StorageManager:
                 'max_emails_per_hour': 500,
                 'max_emails_per_day': 5000,
                 'enable_tracking': True,
-                'enable_unsubscribe': True
+                'enable_unsubscribe': True,
+                'cta_url': '#',
+                'unsubscribe_url': '#'
             }
         }
     
@@ -414,7 +426,7 @@ class StorageManager:
                     # Count rows
                     row_count = 0
                     try:
-                        with open(file_path, 'r') as f:
+                        with open(file_path, 'r', encoding='utf-8') as f:
                             reader = csv.reader(f)
                             row_count = sum(1 for _ in reader) - 1
                     except:
@@ -469,7 +481,7 @@ class StorageManager:
             file_path = os.path.join(self.uploads_dir, safe_name)
             
             if os.path.exists(file_path):
-                with open(file_path, 'r') as f:
+                with open(file_path, 'r', encoding='utf-8') as f:
                     reader = csv.DictReader(f)
                     for i, row in enumerate(reader):
                         if i >= limit:
@@ -486,7 +498,7 @@ class StorageManager:
             file_path = os.path.join(self.uploads_dir, safe_name)
             
             if os.path.exists(file_path):
-                with open(file_path, 'r') as f:
+                with open(file_path, 'r', encoding='utf-8') as f:
                     return sum(1 for _ in f) - 1
         except Exception as e:
             logger.error(f"Failed to count recipients: {e}")
@@ -495,7 +507,7 @@ class StorageManager:
     # ===== Blacklist Management =====
     def load_blacklist(self) -> List[str]:
         """Load blacklisted emails"""
-        blacklist_file = os.path.join(self.db_file.replace('.db', '_blacklist.json'))
+        blacklist_file = os.path.join(os.path.dirname(self.db_file), 'blacklist.json')
         try:
             if os.path.exists(blacklist_file):
                 with open(blacklist_file, 'r') as f:
@@ -507,7 +519,7 @@ class StorageManager:
     
     def save_blacklist(self, emails: List[str]) -> bool:
         """Save blacklisted emails"""
-        blacklist_file = os.path.join(self.db_file.replace('.db', '_blacklist.json'))
+        blacklist_file = os.path.join(os.path.dirname(self.db_file), 'blacklist.json')
         try:
             with open(blacklist_file, 'w') as f:
                 json.dump({'emails': list(set(emails)), 'updated_at': datetime.now().isoformat()}, f, indent=2)
@@ -559,7 +571,7 @@ class StorageManager:
             file_path = os.path.join(self.logs_dir, safe_name)
             
             if os.path.exists(file_path):
-                with open(file_path, 'r') as f:
+                with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
                     if lines > 0:
                         content_lines = content.split('\n')
@@ -629,7 +641,7 @@ class StorageManager:
                             zipf.write(file_path, arcname)
                 
                 # Add blacklist
-                blacklist_file = os.path.join(self.db_file.replace('.db', '_blacklist.json'))
+                blacklist_file = os.path.join(os.path.dirname(self.db_file), 'blacklist.json')
                 if os.path.exists(blacklist_file):
                     zipf.write(blacklist_file, 'blacklist.json')
             
@@ -669,10 +681,6 @@ class StorageManager:
     # ===== System Information =====
     def get_system_info(self) -> dict:
         """Get system information"""
-        import platform
-        import psutil 
-        if importlib.util.find_spec('psutil') else None;
-        
         info = {
             'system': {
                 'platform': platform.platform(),
@@ -688,27 +696,27 @@ class StorageManager:
         }
         
         # Add disk info if psutil available
-        try:
-            import psutil
-            disk = psutil.disk_usage(self.backups_dir)
-            info['disk'] = {
-                'total_gb': round(disk.total / (1024**3), 1),
-                'free_gb': round(disk.free / (1024**3), 1),
-                'used_gb': round(disk.used / (1024**3), 1),
-                'percent_used': disk.percent
-            }
-            memory = psutil.virtual_memory()
-            info['memory'] = {
-                'total_gb': round(memory.total / (1024**3), 1),
-                'available_gb': round(memory.available / (1024**3), 1),
-                'percent_used': memory.percent
-            }
-            info['cpu'] = {
-                'count': psutil.cpu_count(),
-                'percent': psutil.cpu_percent(interval=0.1)
-            }
-        except:
-            pass
+        if PSUTIL_AVAILABLE and psutil:
+            try:
+                disk = psutil.disk_usage(self.backups_dir)
+                info['disk'] = {
+                    'total_gb': round(disk.total / (1024**3), 1),
+                    'free_gb': round(disk.free / (1024**3), 1),
+                    'used_gb': round(disk.used / (1024**3), 1),
+                    'percent_used': disk.percent
+                }
+                memory = psutil.virtual_memory()
+                info['memory'] = {
+                    'total_gb': round(memory.total / (1024**3), 1),
+                    'available_gb': round(memory.available / (1024**3), 1),
+                    'percent_used': memory.percent
+                }
+                info['cpu'] = {
+                    'count': psutil.cpu_count(),
+                    'percent': psutil.cpu_percent(interval=0.1)
+                }
+            except Exception as e:
+                logger.warning(f"Failed to get system metrics: {e}")
         
         return info
 
@@ -760,7 +768,6 @@ class SMTPEmailSender:
                     msg.attach(MIMEText(text_content, 'plain', 'utf-8'))
                 else:
                     # Convert HTML to text
-                    import re
                     text_content = re.sub(r'<[^>]+>', '', html_content)
                     msg.attach(MIMEText(text_content, 'plain', 'utf-8'))
                 
@@ -845,8 +852,6 @@ def get_email_sender():
 # ==================== Template Helper ====================
 def render_template_content(template_content: str, context: dict) -> str:
     """Simple template rendering with variable substitution"""
-    import re
-    
     content = template_content
     
     # Replace {{variable}} patterns
@@ -986,8 +991,8 @@ class CampaignWorker:
                 
                 # Update progress
                 if (i + 1) % 10 == 0:
-                    campaign = storage.load_campaigns()
-                    for c in campaign:
+                    campaigns = storage.load_campaigns()
+                    for c in campaigns:
                         if c.get('id') == campaign_id:
                             c['stats']['sent'] = sent
                             c['stats']['failed'] = failed
@@ -1024,7 +1029,7 @@ Skipped (blacklisted): {skipped}
 Success Rate: {round(sent/max(total,1)*100, 1)}%
 """
             log_file = os.path.join(Config.LOGS_PATH, f"campaign_{campaign_id}.log")
-            with open(log_file, 'w') as f:
+            with open(log_file, 'w', encoding='utf-8') as f:
                 f.write(log_content)
             
         except Exception as e:
@@ -1087,7 +1092,7 @@ def get_config():
     """Get current configuration"""
     config = storage.load_config()
     # Don't send password in response
-    if 'smtp' in config and 'password' in config['smtp']:
+    if 'smtp' in config and 'password' in config['smtp'] and config['smtp']['password']:
         config['smtp']['password'] = '***'
     return jsonify(config)
 
