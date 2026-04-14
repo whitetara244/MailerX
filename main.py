@@ -1277,3 +1277,7 @@ if __name__ == '__main__':
     
     logger.info(f"Starting MailerX Pro on {args.host}:{args.port}")
     app.run(host=args.host, port=args.port, debug=args.debug, threaded=True)
+
+# Optional: Increase limits for form data
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
