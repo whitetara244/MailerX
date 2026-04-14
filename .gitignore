@@ -8,3 +8,6 @@ static/1x1.png
 static/img/1x1.png
 templates/welcome.html
 config.json
+data/templates/Newsletter.html
+data/templates/Newsletter.meta.json
+data/uploads/20260414_185715_contacts.csv

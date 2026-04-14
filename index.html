@@ -7,6 +7,7 @@
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="icon" type="image/png" href="https://favicon.farm/📧" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
@@ -321,9 +322,31 @@
         }
         .toast.success { background: #10b981; }
         .toast.error { background: #ef4444; }
+        .toast.info { background: #3b82f6; }
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
+        }
+        .form-row {
+            margin-bottom: 1rem;
+        }
+        .form-row label {
+            margin-bottom: 0.5rem;
+        }
+        .campaign-summary {
+            background: #f8fafc;
+            border-radius: 16px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .campaign-summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .campaign-summary-item:last-child {
+            border-bottom: none;
         }
         @media (max-width: 780px) {
             .sidebar { width: 80px; }
@@ -359,18 +382,68 @@
 <!-- Campaign Launch Modal -->
 <div id="campaignModal" class="modal-overlay">
     <div class="modal">
-        <h3 style="margin-bottom: 1rem;"><i class="fas fa-paper-plane"></i> Launch Campaign</h3>
-        <div style="display: grid; gap: 1rem;">
-            <div><label>Campaign Name</label><input type="text" id="campName" placeholder="Black Friday Flash"></div>
-            <div><label>Email Subject</label><input type="text" id="campSubject" placeholder="🔥 Exclusive offer inside"></div>
-            <div><label>Reply-To Address</label><input type="email" id="campReplyTo" placeholder="support@yourdomain.com"></div>
-            <div><label>Rate Limit (emails/second)</label><input type="number" id="campRate" value="4" step="1"></div>
-            <div><label>Template</label><select id="campTemplateSelect"></select></div>
-            <div><label>Recipient CSV File</label><select id="campRecipientSelect"></select></div>
+        <div class="flex-between" style="margin-bottom: 1rem;">
+            <h3><i class="fas fa-paper-plane"></i> Launch Mass Email Campaign</h3>
+            <button class="btn btn-sm btn-outline" id="closeModalBtn"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="campaignFormContent">
+            <div class="form-row">
+                <label><i class="fas fa-tag"></i> Campaign Name</label>
+                <input type="text" id="campName" placeholder="e.g., Black Friday Flash Sale">
+            </div>
+            <div class="form-row">
+                <label><i class="fas fa-subject"></i> Email Subject</label>
+                <input type="text" id="campSubject" placeholder="🔥 Exclusive offer inside!">
+            </div>
+            <div class="form-row">
+                <label><i class="fas fa-reply"></i> Reply-To Address</label>
+                <input type="email" id="campReplyTo" placeholder="support@yourdomain.com">
+            </div>
+            <div class="form-row">
+                <label><i class="fas fa-tachometer-alt"></i> Rate Limit (emails/second)</label>
+                <input type="number" id="campRate" value="5" step="1" min="1" max="50">
+                <small style="color: #64748b; font-size: 0.7rem;">Lower rate = better deliverability</small>
+            </div>
+            <div class="form-row">
+                <label><i class="fas fa-file-alt"></i> Email Template</label>
+                <select id="campTemplateSelect">
+                    <option value="">-- Select a template --</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label><i class="fas fa-users"></i> Recipient List (CSV)</label>
+                <select id="campRecipientSelect">
+                    <option value="">-- Select recipient file --</option>
+                </select>
+            </div>
+            <div id="campaignSummary" class="campaign-summary" style="display: none;">
+                <strong><i class="fas fa-chart-line"></i> Campaign Summary</strong>
+                <div class="campaign-summary-item">
+                    <span>Total Recipients:</span>
+                    <span id="summaryRecipients">0</span>
+                </div>
+                <div class="campaign-summary-item">
+                    <span>Estimated duration:</span>
+                    <span id="summaryDuration">--</span>
+                </div>
+                <div class="campaign-summary-item">
+                    <span>Template attachments:</span>
+                    <span id="summaryAttachments">0</span>
+                </div>
+            </div>
+        </div>
+        <div id="campaignProgress" style="display: none;">
+            <div class="form-row">
+                <label><i class="fas fa-spinner fa-spin"></i> Sending Campaign...</label>
+                <div class="progress-bar">
+                    <div id="campaignProgressFill" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <p id="campaignProgressText" style="margin-top: 10px; font-size: 0.85rem;">Preparing...</p>
+            </div>
         </div>
         <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 1.8rem;">
-            <button class="btn btn-outline" id="closeModalBtn">Cancel</button>
-            <button class="btn btn-primary" id="confirmCampaignBtn">Start Campaign <i class="fas fa-rocket"></i></button>
+            <button class="btn btn-outline" id="cancelCampaignBtn">Cancel</button>
+            <button class="btn btn-primary" id="confirmCampaignBtn"><i class="fas fa-rocket"></i> Start Campaign</button>
         </div>
     </div>
 </div>
@@ -414,13 +487,14 @@
     let campaignsCache = [];
     let templatesCache = [];
     let recipientsCache = [];
+    let recipientsDetails = {};
     let currentEditingTemplate = null;
 
     // Toast notification
     function showToast(message, type = 'success') {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
     }
@@ -447,6 +521,16 @@
         campaignsCache = campRes.campaigns || [];
         templatesCache = tplRes || [];
         recipientsCache = recipRes || [];
+        
+        // Fetch recipient counts
+        for (const recip of recipientsCache) {
+            if (recip.name) {
+                const count = await fetch(`/api/recipient-files/${recip.name}/count`).catch(() => ({ json: () => ({ count: 0 }) }));
+                const data = await count.json?.().catch(() => ({ count: recip.row_count || 0 }));
+                recipientsDetails[recip.name] = { count: data.count || recip.row_count || 0 };
+            }
+        }
+        
         return { campaigns: campaignsCache, templates: templatesCache, recipients: recipientsCache };
     }
 
@@ -490,7 +574,7 @@
             <div class="card"><div class="card-header">📈 7-Day Email Volume</div><canvas id="trendChart" height="100" style="max-height:200px"></canvas></div>
             <div class="card"><div class="card-header">📋 Recent Campaign Activity</div>
             <table><thead><tr><th>Name</th><th>Status</th><th>Sent</th><th>Failed</th><th>Date</th></tr></thead><tbody>
-                ${recent.map(c => `<tr><td><strong>${c.name || c.id?.slice(0,8)}</strong></td><td><span class="badge ${c.status==='completed'?'badge-success':c.status==='running'?'badge-warning':'badge'}">${c.status}</span></td><td>${c.stats?.sent||0}</td><td>${c.stats?.failed||0}</td><td>${(c.created_at || '').slice(0,10)}</td></tr>`).join('')}
+                ${recent.map(c => `<tr><td><strong>${c.name || c.id?.slice(0,8)}</strong> ${c.attachment_count > 0 ? '📎' : ''}</td><td><span class="badge ${c.status==='completed'?'badge-success':c.status==='running'?'badge-warning':'badge'}">${c.status}</span></td><td>${c.stats?.sent||0}</td><td>${c.stats?.failed||0}</td><td>${(c.created_at || '').slice(0,10)}</td></tr>`).join('')}
                 ${recent.length===0?'<tr><td colspan="5"><center>No campaigns yet. Start first one!</center></td></tr>':''}
             </tbody></table></div>
         `;
@@ -503,20 +587,34 @@
     async function renderCampaigns(container) {
         await refreshCore();
         container.innerHTML = `
-            <div class="flex-between" style="margin-bottom: 1rem;"><h3><i class="fas fa-rocket"></i> Campaign Manager</h3><button class="btn btn-primary" id="newCampaignBtn"><i class="fas fa-plus"></i> New Campaign</button></div>
-            <div class="card"><table><thead><tr><th>Campaign</th><th>Subject</th><th>Status</th><th>Progress</th><th>Sent/Failed</th><th>Actions</th></tr></thead><tbody>
-            ${campaignsCache.map(c => {
-                const sent = c.stats?.sent || 0; const total = c.total_recipients || 1; const percent = total ? Math.min(100, Math.round((sent/total)*100)) : 0;
-                const hasAttachments = c.has_attachments || c.attachment_count > 0;
-                return `<tr><td><strong>${c.name || c.id}</strong> ${hasAttachments ? '<i class="fas fa-paperclip" style="color:#64748b" title="Has attachments"></i>' : ''}</td>
-                <td>${c.subject?.slice(0,35)||'—'}</td>
-                <td><span class="badge">${c.status}</span></td>
-                <td style="width:140px"><div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div></td>
-                <td>✅ ${sent} / ❌ ${c.stats?.failed||0}</td>
-                <td>${c.status === 'running' ? `<button class="btn-sm btn-outline stop-camp" data-id="${c.id}"><i class="fas fa-stop"></i> Stop</button>` : `<button class="btn-sm btn-outline view-camp-log" data-id="${c.id}">Log</button>`}</td></tr>`;
-            }).join('')}
-            ${campaignsCache.length === 0 ? '<tr><td colspan="6"><center>No campaigns created</center></td></tr>' : ''}
-            </tbody></table></div>
+            <div class="flex-between" style="margin-bottom: 1rem;">
+                <h3><i class="fas fa-rocket"></i> Campaign Manager</h3>
+                <button class="btn btn-primary" id="newCampaignBtn"><i class="fas fa-plus"></i> New Campaign</button>
+            </div>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr><th>Campaign</th><th>Subject</th><th>Status</th><th>Progress</th><th>Sent/Failed</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                        ${campaignsCache.map(c => {
+                            const sent = c.stats?.sent || 0; 
+                            const total = c.total_recipients || 1; 
+                            const percent = total ? Math.min(100, Math.round((sent/total)*100)) : 0;
+                            const hasAttachments = c.has_attachments || c.attachment_count > 0;
+                            return `<tr>
+                                <td><strong>${c.name || c.id}</strong> ${hasAttachments ? '<i class="fas fa-paperclip" style="color:#64748b" title="Has attachments"></i>' : ''}</td>
+                                <td>${c.subject?.slice(0,35)||'—'}</td>
+                                <td><span class="badge ${c.status === 'completed' ? 'badge-success' : c.status === 'running' ? 'badge-warning' : 'badge'}">${c.status}</span></td>
+                                <td style="width:140px"><div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div></td>
+                                <td>✅ ${sent} / ❌ ${c.stats?.failed||0}</td>
+                                <td>${c.status === 'running' ? `<button class="btn-sm btn-outline stop-camp" data-id="${c.id}"><i class="fas fa-stop"></i> Stop</button>` : `<button class="btn-sm btn-outline view-camp-log" data-id="${c.id}"><i class="fas fa-chart-line"></i> Log</button>`}</td>
+                            </tr>`;
+                        }).join('')}
+                        ${campaignsCache.length === 0 ? '<tr><td colspan="6"><center>No campaigns created. Click "New Campaign" to start.</center></td></tr>' : ''}
+                    </tbody>
+                </table>
+            </div>
         `;
         document.getElementById('newCampaignBtn')?.addEventListener('click', () => openCampaignModal());
         document.querySelectorAll('.stop-camp').forEach(btn => btn.addEventListener('click', async (e) => {
@@ -586,7 +684,6 @@
         currentEditingTemplate = templateName;
         
         if (templateName) {
-            // Load existing template
             const template = await apiReq(`/api/templates/${templateName}`).catch(() => null);
             if (template) {
                 nameInput.value = template.name;
@@ -649,10 +746,18 @@
                 <button class="btn btn-primary" id="uploadCsvBtn" style="margin-top:12px"><i class="fas fa-cloud-upload-alt"></i> Upload & Validate</button>
             </div>
             <div class="card">
-                <table><thead><tr><th>Filename</th><th>Rows</th><th>Size</th><th>Actions</th></tr></thead><tbody>
-                ${files.map(f => `<tr><td><i class="fas fa-file-csv"></i> ${f.display_name || f.name}</td><td>${f.row_count || 0}</td><td>${f.size_mb} MB</td><td><button class="btn-sm btn-outline del-recip" data-name="${f.name}"><i class="fas fa-trash"></i> Delete</button></td></tr>`).join('')}
-                ${files.length === 0 ? '<tr><td colspan="4"><center>No recipient files uploaded</center></td></tr>' : ''}
-                </tbody></table>
+                <table>
+                    <thead><tr><th>Filename</th><th>Rows</th><th>Size</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        ${files.map(f => `<tr>
+                            <td><i class="fas fa-file-csv"></i> ${f.display_name || f.name}</td>
+                            <td>${f.row_count || 0}</td>
+                            <td>${f.size_mb} MB</td>
+                            <td><button class="btn-sm btn-outline del-recip" data-name="${f.name}"><i class="fas fa-trash"></i> Delete</button></td>
+                        </tr>`).join('')}
+                        ${files.length === 0 ? '<tr><td colspan="4"><center>No recipient files uploaded</center></td></tr>' : ''}
+                    </tbody>
+                </table>
             </div>
         `;
         document.getElementById('uploadCsvBtn')?.addEventListener('click', async () => {
@@ -694,7 +799,11 @@
                 <table>
                     <thead><tr><th><input type="checkbox" id="selectAllBlacklist"></th><th>Blocked Email</th><th>Remove</th></tr></thead>
                     <tbody id="blacklistTableBody">
-                        ${emails.map(email => `<tr><td><input type="checkbox" class="blacklist-chk" value="${email}"></td><td>${email}</td><td><button class="btn-sm btn-outline remove-single-black" data-email="${email}"><i class="fas fa-trash"></i> Delete</button></td></tr>`).join('')}
+                        ${emails.map(email => `<tr>
+                            <td><input type="checkbox" class="blacklist-chk" value="${email}"></td>
+                            <td>${email}</td>
+                            <td><button class="btn-sm btn-outline remove-single-black" data-email="${email}"><i class="fas fa-trash"></i> Delete</button></td>
+                        </tr>`).join('')}
                         ${emails.length === 0 ? '<tr><td colspan="3"><center>No blocked emails</center></td></tr>' : ''}
                     </tbody>
                 </table>
@@ -839,36 +948,176 @@
         });
     }
 
-    // Helper: open campaign modal
+    // ======================= CAMPAIGN MODAL HANDLING =======================
     async function openCampaignModal() {
         await refreshCore();
+        
         const tplSelect = document.getElementById('campTemplateSelect');
         const recipSelect = document.getElementById('campRecipientSelect');
-        if(tplSelect) tplSelect.innerHTML = templatesCache.map(t => `<option value="${t.name}">${t.name} ${t.attachment_count > 0 ? '📎' : ''}</option>`).join('');
-        if(recipSelect) recipSelect.innerHTML = recipientsCache.map(r => `<option value="${r.name}">${r.display_name || r.name}</option>`).join('');
+        
+        if(tplSelect) {
+            tplSelect.innerHTML = '<option value="">-- Select a template --</option>' + 
+                templatesCache.map(t => `<option value="${t.name}" data-attachments="${t.attachment_count || 0}">${t.name} ${t.attachment_count > 0 ? `📎 (${t.attachment_count})` : ''}</option>`).join('');
+        }
+        if(recipSelect) {
+            recipSelect.innerHTML = '<option value="">-- Select recipient file --</option>' + 
+                recipientsCache.map(r => `<option value="${r.name}" data-rows="${r.row_count || 0}">${r.display_name || r.name} (${r.row_count || 0} recipients)</option>`).join('');
+        }
+        
+        // Add event listeners for summary update
+        const updateSummary = () => {
+            const selectedTemplate = tplSelect?.options[tplSelect.selectedIndex];
+            const selectedRecip = recipSelect?.options[recipSelect.selectedIndex];
+            const recipientCount = selectedRecip ? parseInt(selectedRecip.dataset.rows) || 0 : 0;
+            const attachmentCount = selectedTemplate ? parseInt(selectedTemplate.dataset.attachments) || 0 : 0;
+            const rateLimit = parseInt(document.getElementById('campRate')?.value) || 5;
+            
+            const estimatedSeconds = recipientCount / rateLimit;
+            const estimatedMinutes = Math.ceil(estimatedSeconds / 60);
+            
+            document.getElementById('summaryRecipients').innerText = recipientCount.toLocaleString();
+            document.getElementById('summaryAttachments').innerText = attachmentCount;
+            document.getElementById('summaryDuration').innerText = estimatedMinutes > 0 ? `~${estimatedMinutes} minute${estimatedMinutes !== 1 ? 's' : ''}` : 'Less than a minute';
+            
+            const summaryDiv = document.getElementById('campaignSummary');
+            if (recipientCount > 0) {
+                summaryDiv.style.display = 'block';
+            } else {
+                summaryDiv.style.display = 'none';
+            }
+        };
+        
+        tplSelect?.addEventListener('change', updateSummary);
+        recipSelect?.addEventListener('change', updateSummary);
+        document.getElementById('campRate')?.addEventListener('input', updateSummary);
+        
+        updateSummary();
+        
+        // Reset modal to form view
+        document.getElementById('campaignFormContent').style.display = 'block';
+        document.getElementById('campaignProgress').style.display = 'none';
+        document.getElementById('confirmCampaignBtn').style.display = 'inline-flex';
+        document.getElementById('cancelCampaignBtn').style.display = 'inline-flex';
+        document.getElementById('confirmCampaignBtn').disabled = false;
+        
         document.getElementById('campaignModal').classList.add('active');
+    }
+    
+    // Start campaign function
+    async function startCampaign() {
+        const campaignName = document.getElementById('campName').value.trim();
+        const subject = document.getElementById('campSubject').value.trim();
+        const replyTo = document.getElementById('campReplyTo').value.trim();
+        const rateLimit = parseInt(document.getElementById('campRate').value) || 5;
+        const recipientsFile = document.getElementById('campRecipientSelect').value;
+        const template = document.getElementById('campTemplateSelect').value;
+        
+        // Validation
+        if (!campaignName) {
+            showToast('Please enter a campaign name', 'error');
+            return false;
+        }
+        if (!subject) {
+            showToast('Please enter an email subject', 'error');
+            return false;
+        }
+        if (!recipientsFile) {
+            showToast('Please select a recipient file', 'error');
+            return false;
+        }
+        if (!template) {
+            showToast('Please select a template', 'error');
+            return false;
+        }
+        
+        // Show progress UI
+        document.getElementById('campaignFormContent').style.display = 'none';
+        document.getElementById('campaignProgress').style.display = 'block';
+        document.getElementById('confirmCampaignBtn').style.display = 'none';
+        document.getElementById('cancelCampaignBtn').innerHTML = '<i class="fas fa-times"></i> Close';
+        document.getElementById('campaignProgressText').innerHTML = 'Starting campaign...';
+        document.getElementById('campaignProgressFill').style.width = '30%';
+        
+        const payload = {
+            campaign_name: campaignName,
+            subject: subject,
+            reply_to: replyTo,
+            rate_limit: rateLimit,
+            recipients_file: recipientsFile,
+            template: template
+        };
+        
+        try {
+            document.getElementById('campaignProgressText').innerHTML = 'Sending emails... This may take a few minutes.';
+            document.getElementById('campaignProgressFill').style.width = '60%';
+            
+            const result = await apiReq('/api/campaign/start', { method: 'POST', body: JSON.stringify(payload) });
+            
+            document.getElementById('campaignProgressFill').style.width = '100%';
+            document.getElementById('campaignProgressText').innerHTML = '✅ Campaign started successfully!';
+            
+            showToast(`Campaign "${campaignName}" started successfully!`, 'success');
+            
+            // Close modal after delay
+            setTimeout(() => {
+                document.getElementById('campaignModal').classList.remove('active');
+                // Refresh campaigns view if we're on that tab
+                if (currentTab === 'campaigns') {
+                    renderCurrentTab();
+                } else {
+                    // Refresh dashboard to show updated stats
+                    refreshCore();
+                }
+            }, 1500);
+            
+            return true;
+        } catch (error) {
+            document.getElementById('campaignProgressFill').style.width = '0%';
+            document.getElementById('campaignProgressText').innerHTML = `❌ Error: ${error.message}`;
+            showToast(`Failed to start campaign: ${error.message}`, 'error');
+            
+            // Reset form after error
+            setTimeout(() => {
+                document.getElementById('campaignFormContent').style.display = 'block';
+                document.getElementById('campaignProgress').style.display = 'none';
+                document.getElementById('confirmCampaignBtn').style.display = 'inline-flex';
+                document.getElementById('cancelCampaignBtn').innerHTML = 'Cancel';
+                document.getElementById('confirmCampaignBtn').disabled = false;
+            }, 2000);
+            
+            return false;
+        }
     }
 
     // Modal event listeners
-    document.getElementById('closeModalBtn')?.addEventListener('click', () => document.getElementById('campaignModal').classList.remove('active'));
-    document.getElementById('closeTemplateModalBtn')?.addEventListener('click', () => document.getElementById('templateEditorModal').classList.remove('active'));
-    document.getElementById('cancelTemplateBtn')?.addEventListener('click', () => document.getElementById('templateEditorModal').classList.remove('active'));
+    document.getElementById('closeModalBtn')?.addEventListener('click', () => {
+        document.getElementById('campaignModal').classList.remove('active');
+        // Reset form
+        document.getElementById('campaignFormContent').style.display = 'block';
+        document.getElementById('campaignProgress').style.display = 'none';
+        document.getElementById('confirmCampaignBtn').style.display = 'inline-flex';
+        document.getElementById('cancelCampaignBtn').innerHTML = 'Cancel';
+        document.getElementById('confirmCampaignBtn').disabled = false;
+    });
+    
+    document.getElementById('cancelCampaignBtn')?.addEventListener('click', () => {
+        document.getElementById('campaignModal').classList.remove('active');
+        // Reset form
+        document.getElementById('campaignFormContent').style.display = 'block';
+        document.getElementById('campaignProgress').style.display = 'none';
+        document.getElementById('confirmCampaignBtn').style.display = 'inline-flex';
+        document.getElementById('cancelCampaignBtn').innerHTML = 'Cancel';
+        document.getElementById('confirmCampaignBtn').disabled = false;
+    });
     
     document.getElementById('confirmCampaignBtn')?.addEventListener('click', async () => {
-        const payload = {
-            campaign_name: document.getElementById('campName').value,
-            subject: document.getElementById('campSubject').value,
-            reply_to: document.getElementById('campReplyTo').value,
-            rate_limit: parseInt(document.getElementById('campRate').value) || 5,
-            recipients_file: document.getElementById('campRecipientSelect').value,
-            template: document.getElementById('campTemplateSelect').value
-        };
-        if(!payload.recipients_file || !payload.template) return alert('Select both template and recipient CSV');
-        await apiReq('/api/campaign/start', { method: 'POST', body: JSON.stringify(payload) });
-        document.getElementById('campaignModal').classList.remove('active');
-        showToast('Campaign started successfully!', 'success');
-        renderCurrentTab();
+        // Disable button to prevent double submission
+        document.getElementById('confirmCampaignBtn').disabled = true;
+        await startCampaign();
     });
+    
+    document.getElementById('closeTemplateModalBtn')?.addEventListener('click', () => document.getElementById('templateEditorModal').classList.remove('active'));
+    document.getElementById('cancelTemplateBtn')?.addEventListener('click', () => document.getElementById('templateEditorModal').classList.remove('active'));
     
     document.getElementById('saveTemplateFinalBtn')?.addEventListener('click', async () => {
         const name = document.getElementById('tplNameEdit').value.trim();
