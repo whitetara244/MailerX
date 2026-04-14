@@ -24,7 +24,6 @@
             display: flex;
             min-height: 100vh;
         }
-        /* Sidebar Pro */
         .sidebar {
             width: 270px;
             background: linear-gradient(180deg, #0b1120 0%, #0f172a 100%);
@@ -161,6 +160,9 @@
             background: transparent;
             border: 1px solid #cbd5e1;
         }
+        .btn-outline:hover {
+            background: #f8fafc;
+        }
         .btn-sm {
             padding: 0.3rem 0.9rem;
             font-size: 0.75rem;
@@ -168,6 +170,9 @@
         .btn-danger {
             background: #ef4444;
             color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
         }
         table {
             width: 100%;
@@ -205,6 +210,7 @@
         }
         .badge-success { background: #dcfce7; color: #15803d; }
         .badge-warning { background: #fef9c3; color: #854d0e; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
         .stat-number {
             font-size: 2rem;
             font-weight: 800;
@@ -220,7 +226,7 @@
             background: #ffffff;
             transition: 0.2s;
         }
-        input:focus, select:focus {
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: #4f46e5;
             box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
@@ -252,8 +258,10 @@
         }
         .modal {
             background: white;
-            max-width: 600px;
+            max-width: 700px;
             width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
             border-radius: 32px;
             padding: 1.8rem;
             box-shadow: 0 25px 40px rgba(0,0,0,0.25);
@@ -262,6 +270,60 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+        .attachment-list {
+            margin-top: 12px;
+            padding: 10px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+        .attachment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .attachment-item:last-child {
+            margin-bottom: 0;
+        }
+        .attachment-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+        .attachment-name i {
+            font-size: 1.1rem;
+        }
+        .attachment-size {
+            font-size: 0.7rem;
+            color: #64748b;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e293b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            z-index: 2000;
+            animation: slideIn 0.3s ease;
+        }
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         @media (max-width: 780px) {
             .sidebar { width: 80px; }
@@ -313,20 +375,60 @@
     </div>
 </div>
 
+<!-- Template Editor Modal -->
+<div id="templateEditorModal" class="modal-overlay">
+    <div class="modal" style="max-width: 800px;">
+        <div class="flex-between" style="margin-bottom: 1rem;">
+            <h3><i class="fas fa-edit"></i> Template Editor</h3>
+            <button class="btn btn-sm btn-outline" id="closeTemplateModalBtn"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="display: grid; gap: 1rem;">
+            <div>
+                <label>Template Name</label>
+                <input type="text" id="tplNameEdit" placeholder="my_template_name">
+            </div>
+            <div>
+                <label>HTML Content</label>
+                <textarea id="tplHtmlContent" rows="10" style="font-family: monospace; font-size: 12px;"></textarea>
+            </div>
+            <div>
+                <label><i class="fas fa-paperclip"></i> Attachments</label>
+                <div id="attachmentsList" class="attachment-list">
+                    <div style="text-align: center; color: #94a3b8; padding: 20px;">No attachments</div>
+                </div>
+                <input type="file" id="attachmentUpload" multiple style="margin-top: 8px;">
+                <button class="btn btn-sm btn-outline" id="uploadAttachmentBtn" style="margin-top: 8px;"><i class="fas fa-upload"></i> Upload Attachment</button>
+            </div>
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 1.5rem;">
+            <button class="btn btn-outline" id="cancelTemplateBtn">Cancel</button>
+            <button class="btn btn-primary" id="saveTemplateFinalBtn"><i class="fas fa-save"></i> Save Template</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    // ---------- FULL PRODUCTION FRONTEND ----------
+    // ---------- FULL PRODUCTION FRONTEND WITH ATTACHMENTS ----------
     let currentTab = "dashboard";
     let chartMain = null;
     let campaignsCache = [];
     let templatesCache = [];
     let recipientsCache = [];
+    let currentEditingTemplate = null;
 
-    // robust api caller
+    // Toast notification
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // API caller
     async function apiReq(endpoint, options = {}) {
-        const res = await fetch(endpoint, {
-            headers: { 'Content-Type': 'application/json' },
-            ...options
-        });
+        const headers = { 'Content-Type': 'application/json' };
+        const res = await fetch(endpoint, { headers, ...options });
         if (!res.ok) {
             let errMsg = `HTTP ${res.status}`;
             try { const j = await res.json(); errMsg = j.error || j.message || errMsg; } catch(e) {}
@@ -338,9 +440,9 @@
     // Refresh core data
     async function refreshCore() {
         const [campRes, tplRes, recipRes] = await Promise.all([
-            apiReq('/api/campaigns'),
-            apiReq('/api/templates'),
-            apiReq('/api/recipient-files')
+            apiReq('/api/campaigns').catch(() => ({ campaigns: [] })),
+            apiReq('/api/templates').catch(() => []),
+            apiReq('/api/recipient-files').catch(() => [])
         ]);
         campaignsCache = campRes.campaigns || [];
         templatesCache = tplRes || [];
@@ -369,12 +471,11 @@
     // ======================= DASHBOARD =======================
     async function renderDashboard(container) {
         const { campaigns } = await refreshCore();
-        const statsRes = await apiReq('/api/stats');
+        const statsRes = await apiReq('/api/stats').catch(() => ({ totals: { emails_sent: 0, emails_failed: 0, delivery_rate: 0 } }));
         const totals = statsRes.totals || { emails_sent: 0, emails_failed: 0, delivery_rate: 0 };
         const activeCount = campaigns.filter(c => c.status === 'running').length;
         const recent = campaigns.slice(0, 6);
-        // get analytics for chart
-        const analytics = await apiReq('/api/analytics').catch(()=>({ daily_stats: {} }));
+        const analytics = await apiReq('/api/analytics').catch(() => ({ daily_stats: {} }));
         const daily = analytics.daily_stats || {};
         const labels = Object.keys(daily).sort().slice(-7);
         const sentData = labels.map(d => daily[d]?.sent || 0);
@@ -387,9 +488,10 @@
                 <div class="card"><div class="card-header"><i class="fas fa-database"></i> Recipients loaded</div><div class="stat-number">${recipientsCache.reduce((a,b)=>a+(b.row_count||0),0)}</div><div>CSV ready</div></div>
             </div>
             <div class="card"><div class="card-header">📈 7-Day Email Volume</div><canvas id="trendChart" height="100" style="max-height:200px"></canvas></div>
-            <div class="card"><div class="card-header">📋 Recent Campaign Activity</div><table><thead><tr><th>Name</th><th>Status</th><th>Sent</th><th>Failed</th><th>Date</th></tr></thead><tbody>
-                ${recent.map(c => `<tr><td>${c.name || c.id?.slice(0,8)}</td><td><span class="badge ${c.status==='completed'?'badge-success':c.status==='running'?'badge-warning':'badge'}">${c.status}</span></td><td>${c.stats?.sent||0}</td><td>${c.stats?.failed||0}</td><td>${(c.created_at || '').slice(0,10)}</td></tr>`).join('')}
-                ${recent.length===0?'<tr><td colspan="5">No campaigns yet. Start first one!</td></tr>':''}
+            <div class="card"><div class="card-header">📋 Recent Campaign Activity</div>
+            <table><thead><tr><th>Name</th><th>Status</th><th>Sent</th><th>Failed</th><th>Date</th></tr></thead><tbody>
+                ${recent.map(c => `<tr><td><strong>${c.name || c.id?.slice(0,8)}</strong></td><td><span class="badge ${c.status==='completed'?'badge-success':c.status==='running'?'badge-warning':'badge'}">${c.status}</span></td><td>${c.stats?.sent||0}</td><td>${c.stats?.failed||0}</td><td>${(c.created_at || '').slice(0,10)}</td></tr>`).join('')}
+                ${recent.length===0?'<tr><td colspan="5"><center>No campaigns yet. Start first one!</center></td></tr>':''}
             </tbody></table></div>
         `;
         const ctx = document.getElementById('trendChart')?.getContext('2d');
@@ -405,7 +507,10 @@
             <div class="card"><table><thead><tr><th>Campaign</th><th>Subject</th><th>Status</th><th>Progress</th><th>Sent/Failed</th><th>Actions</th></tr></thead><tbody>
             ${campaignsCache.map(c => {
                 const sent = c.stats?.sent || 0; const total = c.total_recipients || 1; const percent = total ? Math.min(100, Math.round((sent/total)*100)) : 0;
-                return `<tr><td><strong>${c.name || c.id}</strong></td><td>${c.subject?.slice(0,35)||'—'}</td><td><span class="badge">${c.status}</span></td>
+                const hasAttachments = c.has_attachments || c.attachment_count > 0;
+                return `<tr><td><strong>${c.name || c.id}</strong> ${hasAttachments ? '<i class="fas fa-paperclip" style="color:#64748b" title="Has attachments"></i>' : ''}</td>
+                <td>${c.subject?.slice(0,35)||'—'}</td>
+                <td><span class="badge">${c.status}</span></td>
                 <td style="width:140px"><div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div></td>
                 <td>✅ ${sent} / ❌ ${c.stats?.failed||0}</td>
                 <td>${c.status === 'running' ? `<button class="btn-sm btn-outline stop-camp" data-id="${c.id}"><i class="fas fa-stop"></i> Stop</button>` : `<button class="btn-sm btn-outline view-camp-log" data-id="${c.id}">Log</button>`}</td></tr>`;
@@ -417,54 +522,138 @@
         document.querySelectorAll('.stop-camp').forEach(btn => btn.addEventListener('click', async (e) => {
             const id = btn.dataset.id;
             await apiReq(`/api/campaign/${id}/stop`, { method: 'POST' });
+            showToast('Campaign stopped', 'success');
             renderCurrentTab();
         }));
         document.querySelectorAll('.view-camp-log').forEach(btn => btn.addEventListener('click', async (e) => {
             const id = btn.dataset.id;
-            const logs = await apiReq(`/api/logs?nocache=${Date.now()}`);
+            const logs = await apiReq(`/api/logs?nocache=${Date.now()}`).catch(() => []);
             const campLog = logs.find(l => l.name.includes(id));
             if(campLog) {
-                const content = await apiReq(`/api/logs/${campLog.name}?lines=200`);
+                const content = await apiReq(`/api/logs/${campLog.name}?lines=200`).catch(() => ({ content: 'Log not available' }));
                 alert(`Campaign log:\n${content.content?.substring(0,800)}`);
             } else alert('Log file not generated yet');
         }));
     }
 
-    // ======================= TEMPLATES =======================
+    // ======================= TEMPLATES WITH ATTACHMENTS =======================
     async function renderTemplates(container) {
-        const tpls = await apiReq('/api/templates');
+        const tpls = await apiReq('/api/templates').catch(() => []);
         container.innerHTML = `
-            <div class="flex-between"><h3>📝 HTML Templates</h3><button class="btn btn-primary" id="createTemplateBtn"><i class="fas fa-plus"></i> New Template</button></div>
-            <div class="grid-2cols">
-                ${tpls.map(t => `<div class="card"><div><strong>${t.name}</strong><div style="font-size:0.7rem; color:#475569">${t.size_kb} KB · updated</div></div>
-                <div style="margin-top:0.9rem; display:flex; gap:8px;"><button class="btn-sm btn-outline preview-tpl" data-name="${t.name}">Preview</button>
-                <button class="btn-sm btn-outline delete-tpl" data-name="${t.name}">Delete</button></div></div>`).join('')}
+            <div class="flex-between" style="margin-bottom: 1rem;">
+                <h3><i class="fas fa-file-alt"></i> HTML Templates</h3>
+                <button class="btn btn-primary" id="createTemplateBtn"><i class="fas fa-plus"></i> New Template</button>
             </div>
-            <div class="card" id="templateEditorCard" style="display:none;"><div class="card-header">✏️ Edit / Create Template</div>
-            <input type="text" id="tplNameEdit" placeholder="template_name" style="margin-bottom:12px"><textarea id="tplHtmlContent" rows="8" style="font-family:monospace"></textarea>
-            <div style="margin-top:12px"><button id="saveTemplateFinalBtn" class="btn btn-primary">Save Template</button></div></div>
+            <div class="grid-2cols">
+                ${tpls.map(t => `<div class="card">
+                    <div class="flex-between">
+                        <div><strong>${t.name}</strong></div>
+                        ${t.attachment_count > 0 ? `<span class="badge"><i class="fas fa-paperclip"></i> ${t.attachment_count}</span>` : ''}
+                    </div>
+                    <div style="font-size:0.7rem; color:#475569; margin-top: 5px;">${t.size_kb} KB · updated</div>
+                    <div style="margin-top:0.9rem; display:flex; gap:8px;">
+                        <button class="btn-sm btn-outline edit-tpl" data-name="${t.name}"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="btn-sm btn-outline preview-tpl" data-name="${t.name}"><i class="fas fa-eye"></i> Preview</button>
+                        <button class="btn-sm btn-outline delete-tpl" data-name="${t.name}"><i class="fas fa-trash"></i> Delete</button>
+                    </div>
+                </div>`).join('')}
+                ${tpls.length === 0 ? '<div class="card" style="text-align: center; color: #64748b;">No templates yet. Click "New Template" to create one.</div>' : ''}
+            </div>
         `;
-        document.getElementById('createTemplateBtn')?.addEventListener('click', () => document.getElementById('templateEditorCard').style.display = 'block');
-        document.querySelectorAll('.preview-tpl').forEach(btn => btn.addEventListener('click', () => window.open(`/api/templates/${btn.dataset.name}/preview`, '_blank')));
-        document.querySelectorAll('.delete-tpl').forEach(btn => btn.addEventListener('click', async () => { if(confirm('Delete template?')) await apiReq(`/api/templates/${btn.dataset.name}`, { method: 'DELETE' }); renderCurrentTab(); }));
-        document.getElementById('saveTemplateFinalBtn')?.addEventListener('click', async () => {
-            const name = document.getElementById('tplNameEdit').value.trim();
-            const content = document.getElementById('tplHtmlContent').value;
-            if(!name) return alert('Template name required');
-            await apiReq('/api/templates', { method: 'POST', body: JSON.stringify({ name, content }) });
-            renderCurrentTab();
-        });
+        document.getElementById('createTemplateBtn')?.addEventListener('click', () => openTemplateEditor());
+        document.querySelectorAll('.edit-tpl').forEach(btn => btn.addEventListener('click', async () => {
+            const name = btn.dataset.name;
+            await openTemplateEditor(name);
+        }));
+        document.querySelectorAll('.preview-tpl').forEach(btn => btn.addEventListener('click', () => {
+            window.open(`/api/templates/${btn.dataset.name}/preview`, '_blank');
+        }));
+        document.querySelectorAll('.delete-tpl').forEach(btn => btn.addEventListener('click', async () => {
+            if(confirm('Delete template? This will also delete all attachments.')) {
+                await apiReq(`/api/templates/${btn.dataset.name}`, { method: 'DELETE' });
+                showToast('Template deleted', 'success');
+                renderCurrentTab();
+            }
+        }));
     }
 
-    // ======================= RECIPIENTS (CSV MANAGEMENT) =======================
+    async function openTemplateEditor(templateName = null) {
+        const modal = document.getElementById('templateEditorModal');
+        const nameInput = document.getElementById('tplNameEdit');
+        const contentArea = document.getElementById('tplHtmlContent');
+        const attachmentsDiv = document.getElementById('attachmentsList');
+        
+        currentEditingTemplate = templateName;
+        
+        if (templateName) {
+            // Load existing template
+            const template = await apiReq(`/api/templates/${templateName}`).catch(() => null);
+            if (template) {
+                nameInput.value = template.name;
+                contentArea.value = template.content;
+                nameInput.disabled = true;
+                await loadAttachments(templateName);
+            }
+        } else {
+            nameInput.value = '';
+            contentArea.value = '<!DOCTYPE html>\n<html>\n<head>\n    <title>{{subject}}</title>\n</head>\n<body>\n    <h1>Hello {{name}}!</h1>\n    <p>Your email: {{email}}</p>\n    {% if company %}\n    <p>Company: {{company}}</p>\n    {% endif %}\n    <a href="{{cta_url}}">Click Here</a>\n</body>\n</html>';
+            nameInput.disabled = false;
+            attachmentsDiv.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;">No attachments</div>';
+        }
+        
+        modal.classList.add('active');
+    }
+    
+    async function loadAttachments(templateName) {
+        const attachments = await apiReq(`/api/templates/${templateName}/attachments`).catch(() => []);
+        const attachmentsDiv = document.getElementById('attachmentsList');
+        
+        if (attachments.length === 0) {
+            attachmentsDiv.innerHTML = '<div style="text-align: center; color: #94a3b8; padding: 20px;">No attachments</div>';
+            return;
+        }
+        
+        attachmentsDiv.innerHTML = attachments.map(att => `
+            <div class="attachment-item" data-filename="${att.filename}">
+                <div class="attachment-name">
+                    <i class="fas ${att.type === 'image' ? 'fa-image' : 'fa-file'}"></i>
+                    <span>${att.filename}</span>
+                    <span class="attachment-size">(${att.size_kb} KB)</span>
+                </div>
+                <button class="btn-sm btn-outline delete-attachment" data-filename="${att.filename}" style="color: #ef4444;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+        
+        document.querySelectorAll('.delete-attachment').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const filename = btn.dataset.filename;
+                if (confirm(`Delete attachment "${filename}"?`)) {
+                    await fetch(`/api/templates/${currentEditingTemplate}/attachments/${filename}`, { method: 'DELETE' });
+                    showToast('Attachment deleted', 'success');
+                    loadAttachments(currentEditingTemplate);
+                }
+            });
+        });
+    }
+    
+    // ======================= RECIPIENTS =======================
     async function renderRecipients(container) {
-        const files = await apiReq('/api/recipient-files');
+        const files = await apiReq('/api/recipient-files').catch(() => []);
         container.innerHTML = `
-            <div class="card"><div class="card-header"><i class="fas fa-upload"></i> Upload CSV (columns: email, name, company, city)</div>
-            <input type="file" id="csvUploadFile" accept=".csv"><button class="btn btn-primary" id="uploadCsvBtn" style="margin-top:12px">Upload & Validate</button></div>
-            <div class="card"><table><thead><tr><th>Filename</th><th>Rows</th><th>Size</th><th>Actions</th></tr></thead><tbody>
-            ${files.map(f => `<tr><td><i class="fas fa-file-csv"></i> ${f.display_name || f.name}</td><td>${f.row_count || 0}</td><td>${f.size_mb} MB</td><td><button class="btn-sm btn-outline del-recip" data-name="${f.name}">Delete</button></td></tr>`).join('')}
-            </tbody></table></div>
+            <div class="card">
+                <div class="card-header"><i class="fas fa-upload"></i> Upload CSV (columns: email, name, company, city)</div>
+                <input type="file" id="csvUploadFile" accept=".csv">
+                <button class="btn btn-primary" id="uploadCsvBtn" style="margin-top:12px"><i class="fas fa-cloud-upload-alt"></i> Upload & Validate</button>
+            </div>
+            <div class="card">
+                <table><thead><tr><th>Filename</th><th>Rows</th><th>Size</th><th>Actions</th></tr></thead><tbody>
+                ${files.map(f => `<tr><td><i class="fas fa-file-csv"></i> ${f.display_name || f.name}</td><td>${f.row_count || 0}</td><td>${f.size_mb} MB</td><td><button class="btn-sm btn-outline del-recip" data-name="${f.name}"><i class="fas fa-trash"></i> Delete</button></td></tr>`).join('')}
+                ${files.length === 0 ? '<tr><td colspan="4"><center>No recipient files uploaded</center></td></tr>' : ''}
+                </tbody></table>
+            </div>
         `;
         document.getElementById('uploadCsvBtn')?.addEventListener('click', async () => {
             const input = document.getElementById('csvUploadFile');
@@ -473,42 +662,67 @@
             form.append('file', input.files[0]);
             const res = await fetch('/api/upload-csv', { method: 'POST', body: form });
             const data = await res.json();
-            if(data.success) alert(`✅ Uploaded! Valid rows: ${data.valid_rows} / total: ${data.total_rows}`);
-            else alert('Upload error');
+            if(data.success) {
+                showToast(`Uploaded! Valid rows: ${data.valid_rows} / total: ${data.total_rows}`, 'success');
+            } else {
+                showToast('Upload error: ' + (data.error || 'Unknown'), 'error');
+            }
             renderCurrentTab();
         });
         document.querySelectorAll('.del-recip').forEach(btn => btn.addEventListener('click', async (e) => {
             await apiReq(`/api/recipient-files/${btn.dataset.name}`, { method: 'DELETE' });
+            showToast('File deleted', 'success');
             renderCurrentTab();
         }));
     }
 
     // ======================= BLACKLIST =======================
     async function renderBlacklist(container) {
-        const blackData = await apiReq('/api/blacklist');
+        const blackData = await apiReq('/api/blacklist').catch(() => ({ items: [] }));
         const emails = blackData.items || [];
         container.innerHTML = `
-            <div class="card"><div class="card-header"><i class="fas fa-ban"></i> Global Blacklist</div>
-            <div style="display: flex; gap: 12px; flex-wrap:wrap;"><input type="text" id="newBlackEmailInput" placeholder="bad@spammer.com" style="flex:2"><button id="addBlacklistBtn" class="btn btn-primary">Add Email</button>
-            <button id="importBlacklistCsvBtn" class="btn btn-outline"><i class="fas fa-upload"></i> Import CSV</button><a href="/api/blacklist/export"><button class="btn btn-outline"><i class="fas fa-download"></i> Export</button></a></div>
+            <div class="card">
+                <div class="card-header"><i class="fas fa-ban"></i> Global Blacklist</div>
+                <div style="display: flex; gap: 12px; flex-wrap:wrap;">
+                    <input type="text" id="newBlackEmailInput" placeholder="bad@spammer.com" style="flex:2">
+                    <button id="addBlacklistBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Add Email</button>
+                    <button id="importBlacklistCsvBtn" class="btn btn-outline"><i class="fas fa-upload"></i> Import CSV</button>
+                    <a href="/api/blacklist/export"><button class="btn btn-outline"><i class="fas fa-download"></i> Export</button></a>
+                </div>
             </div>
-            <div class="card"><table><thead><tr><th><input type="checkbox" id="selectAllBlacklist"></th><th>Blocked Email</th><th>Remove</th></tr></thead><tbody id="blacklistTableBody">
-            ${emails.map(email => `<tr><td><input type="checkbox" class="blacklist-chk" value="${email}"></td><td>${email}</td><td><button class="btn-sm btn-outline remove-single-black" data-email="${email}">Delete</button></td></tr>`).join('')}
-            </tbody></table><button id="bulkRemoveBlackBtn" class="btn btn-sm btn-outline" style="margin-top:12px">Remove Selected</button></div>
+            <div class="card">
+                <table>
+                    <thead><tr><th><input type="checkbox" id="selectAllBlacklist"></th><th>Blocked Email</th><th>Remove</th></tr></thead>
+                    <tbody id="blacklistTableBody">
+                        ${emails.map(email => `<tr><td><input type="checkbox" class="blacklist-chk" value="${email}"></td><td>${email}</td><td><button class="btn-sm btn-outline remove-single-black" data-email="${email}"><i class="fas fa-trash"></i> Delete</button></td></tr>`).join('')}
+                        ${emails.length === 0 ? '<tr><td colspan="3"><center>No blocked emails</center></td></tr>' : ''}
+                    </tbody>
+                </table>
+                <button id="bulkRemoveBlackBtn" class="btn btn-sm btn-outline" style="margin-top:12px"><i class="fas fa-trash"></i> Remove Selected</button>
+            </div>
         `;
         document.getElementById('addBlacklistBtn')?.addEventListener('click', async () => {
             const email = document.getElementById('newBlackEmailInput').value.trim();
-            if(email) await apiReq('/api/blacklist', { method: 'POST', body: JSON.stringify({ emails: [email] }) });
-            renderCurrentTab();
+            if(email) {
+                await apiReq('/api/blacklist', { method: 'POST', body: JSON.stringify({ emails: [email] }) });
+                showToast('Email added to blacklist', 'success');
+                renderCurrentTab();
+            }
         });
         document.getElementById('bulkRemoveBlackBtn')?.addEventListener('click', async () => {
             const selected = Array.from(document.querySelectorAll('.blacklist-chk:checked')).map(cb => cb.value);
-            if(selected.length) await apiReq('/api/blacklist', { method: 'DELETE', body: JSON.stringify({ emails: selected }) });
-            renderCurrentTab();
+            if(selected.length) {
+                await apiReq('/api/blacklist', { method: 'DELETE', body: JSON.stringify({ emails: selected }) });
+                showToast(`${selected.length} emails removed`, 'success');
+                renderCurrentTab();
+            }
         });
-        document.getElementById('selectAllBlacklist')?.addEventListener('change', (e) => document.querySelectorAll('.blacklist-chk').forEach(cb => cb.checked = e.target.checked));
+        document.getElementById('selectAllBlacklist')?.addEventListener('change', (e) => {
+            document.querySelectorAll('.blacklist-chk').forEach(cb => cb.checked = e.target.checked);
+        });
         document.querySelectorAll('.remove-single-black').forEach(btn => btn.addEventListener('click', async () => {
             await apiReq('/api/blacklist', { method: 'DELETE', body: JSON.stringify({ emails: [btn.dataset.email] }) });
+            showToast('Email removed', 'success');
             renderCurrentTab();
         }));
         document.getElementById('importBlacklistCsvBtn')?.addEventListener('click', () => {
@@ -519,28 +733,33 @@
                 const formData = new FormData();
                 formData.append('file', file);
                 await fetch('/api/blacklist/import', { method: 'POST', body: formData });
+                showToast('Blacklist imported', 'success');
                 renderCurrentTab();
             };
             input.click();
         });
     }
 
-    // ======================= SMTP SETTINGS (FULLY FUNCTIONAL) =======================
+    // ======================= SMTP SETTINGS =======================
     async function renderSettings(container) {
-        const cfg = await apiReq('/api/config');
+        const cfg = await apiReq('/api/config').catch(() => ({ smtp: {}, email: {} }));
         container.innerHTML = `
-            <div class="card"><div class="card-header"><i class="fas fa-plug"></i> SMTP Relay Configuration</div>
-            <div class="grid-2cols">
-                <div><label>SMTP Server *</label><input id="smtpServer" value="${cfg.smtp?.server || ''}" placeholder="smtp.sendgrid.net"></div>
-                <div><label>Port</label><input id="smtpPort" value="${cfg.smtp?.port || 587}"></div>
-                <div><label>Username *</label><input id="smtpUsername" value="${cfg.smtp?.username || ''}"></div>
-                <div><label>Password</label><input id="smtpPassword" type="password" placeholder="••••••••"></div>
-                <div><label>From Email *</label><input id="fromEmail" value="${cfg.email?.from_email || ''}"></div>
-                <div><label>From Name</label><input id="fromName" value="${cfg.email?.from_name || 'MailerX Pro'}"></div>
-                <div><label>Reply-To (default)</label><input id="replyToDefault" value="${cfg.email?.reply_to || ''}"></div>
-                <div><label>Use TLS</label><select id="useTls"><option value="true" ${cfg.smtp?.use_tls !== false ? 'selected' : ''}>Yes</option><option value="false">No</option></select></div>
-            </div>
-            <div style="display: flex; gap: 16px; margin-top: 1.5rem;"><button id="testSmtpConnBtn" class="btn btn-outline"><i class="fas fa-vial"></i> Test Connection</button><button id="saveSmtpSettingsBtn" class="btn btn-primary"><i class="fas fa-save"></i> Save Settings</button></div>
+            <div class="card">
+                <div class="card-header"><i class="fas fa-plug"></i> SMTP Relay Configuration</div>
+                <div class="grid-2cols">
+                    <div><label>SMTP Server *</label><input id="smtpServer" value="${cfg.smtp?.server || ''}" placeholder="smtp.gmail.com"></div>
+                    <div><label>Port</label><input id="smtpPort" value="${cfg.smtp?.port || 587}"></div>
+                    <div><label>Username *</label><input id="smtpUsername" value="${cfg.smtp?.username || ''}"></div>
+                    <div><label>Password</label><input id="smtpPassword" type="password" placeholder="••••••••"></div>
+                    <div><label>From Email *</label><input id="fromEmail" value="${cfg.email?.from_email || ''}"></div>
+                    <div><label>From Name</label><input id="fromName" value="${cfg.email?.from_name || 'MailerX Pro'}"></div>
+                    <div><label>Reply-To (default)</label><input id="replyToDefault" value="${cfg.email?.reply_to || ''}"></div>
+                    <div><label>Use TLS</label><select id="useTls"><option value="true" ${cfg.smtp?.use_tls !== false ? 'selected' : ''}>Yes</option><option value="false">No</option></select></div>
+                </div>
+                <div style="display: flex; gap: 16px; margin-top: 1.5rem;">
+                    <button id="testSmtpConnBtn" class="btn btn-outline"><i class="fas fa-vial"></i> Test Connection</button>
+                    <button id="saveSmtpSettingsBtn" class="btn btn-primary"><i class="fas fa-save"></i> Save Settings</button>
+                </div>
             </div>
         `;
         document.getElementById('testSmtpConnBtn')?.addEventListener('click', async () => {
@@ -556,8 +775,8 @@
             try {
                 const res = await fetch('/api/test-smtp', { method: 'POST', body: JSON.stringify(testPayload) });
                 const data = await res.json();
-                alert(data.success ? `✅ Connection successful: ${data.message}` : `❌ Failed: ${data.message}`);
-            } catch(e) { alert(`Error: ${e.message}`); }
+                showToast(data.success ? `✅ Connection successful: ${data.message}` : `❌ Failed: ${data.message}`, data.success ? 'success' : 'error');
+            } catch(e) { showToast(`Error: ${e.message}`, 'error'); }
         });
         document.getElementById('saveSmtpSettingsBtn')?.addEventListener('click', async () => {
             const fullConfig = {
@@ -575,29 +794,47 @@
                 }
             };
             await apiReq('/api/config', { method: 'POST', body: JSON.stringify(fullConfig) });
-            alert('SMTP configuration saved successfully!');
+            showToast('SMTP configuration saved successfully!', 'success');
             renderCurrentTab();
         });
     }
 
     // ======================= BACKUP & LOGS =======================
     async function renderBackupLogs(container) {
-        const backups = await apiReq('/api/backups');
-        const logs = await apiReq('/api/logs');
+        const backups = await apiReq('/api/backups').catch(() => []);
+        const logs = await apiReq('/api/logs').catch(() => []);
         container.innerHTML = `
-            <div class="card"><div class="card-header"><i class="fas fa-database"></i> Disaster Recovery</div><button id="createBackupAction" class="btn btn-primary">Create Full Backup</button>
-            <table style="margin-top:1rem"><thead><tr><th>Backup ID</th><th>Size</th><th>Download</th><th>Delete</th></tr></thead><tbody>
-            ${backups.map(b => `<tr><td>${b.id}</td><td>${b.size_mb} MB</td><td><a href="/api/backup/${b.id}" download><button class="btn-sm btn-outline"><i class="fas fa-download"></i></button></a></td><td><button class="btn-sm btn-outline del-backup-item" data-id="${b.id}"><i class="fas fa-trash"></i></button></td></tr>`).join('')}
-            </tbody></table></div>
-            <div class="card"><div class="card-header"><i class="fas fa-history"></i> Campaign Logs</div>
-            <select id="logFileSelect" style="margin-bottom:12px">${logs.map(l => `<option value="${l.name}">${l.name} (${l.size_kb} KB)</option>`).join('')}</select>
-            <button id="fetchLogBtn" class="btn btn-sm btn-outline">View Log</button><pre id="logViewerArea" style="background:#f1f5f9; padding:12px; border-radius:18px; margin-top:12px; max-height:300px; overflow:auto; font-size:12px;"></pre></div>
+            <div class="card">
+                <div class="card-header"><i class="fas fa-database"></i> Disaster Recovery</div>
+                <button id="createBackupAction" class="btn btn-primary"><i class="fas fa-archive"></i> Create Full Backup</button>
+                <table style="margin-top:1rem">
+                    <thead><tr><th>Backup ID</th><th>Size</th><th>Download</th><th>Delete</th></tr></thead>
+                    <tbody>
+                        ${backups.map(b => `<tr><td>${b.id}</td><td>${b.size_mb} MB</td><td><a href="/api/backup/${b.id}" download><button class="btn-sm btn-outline"><i class="fas fa-download"></i></button></a></td><td><button class="btn-sm btn-outline del-backup-item" data-id="${b.id}"><i class="fas fa-trash"></i></button></td></tr>`).join('')}
+                        ${backups.length === 0 ? '<tr><td colspan="4"><center>No backups available</center></td></tr>' : ''}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card">
+                <div class="card-header"><i class="fas fa-history"></i> Campaign Logs</div>
+                <select id="logFileSelect" style="margin-bottom:12px">${logs.map(l => `<option value="${l.name}">${l.name} (${l.size_kb} KB)</option>`).join('')}</select>
+                <button id="fetchLogBtn" class="btn btn-sm btn-outline"><i class="fas fa-eye"></i> View Log</button>
+                <pre id="logViewerArea" style="background:#f1f5f9; padding:12px; border-radius:18px; margin-top:12px; max-height:300px; overflow:auto; font-size:12px;"></pre>
+            </div>
         `;
-        document.getElementById('createBackupAction')?.addEventListener('click', async () => { await apiReq('/api/backup', { method: 'POST' }); renderCurrentTab(); });
-        document.querySelectorAll('.del-backup-item').forEach(btn => btn.addEventListener('click', async () => { await apiReq(`/api/backup/${btn.dataset.id}`, { method: 'DELETE' }); renderCurrentTab(); }));
+        document.getElementById('createBackupAction')?.addEventListener('click', async () => {
+            await apiReq('/api/backup', { method: 'POST' });
+            showToast('Backup created', 'success');
+            renderCurrentTab();
+        });
+        document.querySelectorAll('.del-backup-item').forEach(btn => btn.addEventListener('click', async () => {
+            await apiReq(`/api/backup/${btn.dataset.id}`, { method: 'DELETE' });
+            showToast('Backup deleted', 'success');
+            renderCurrentTab();
+        }));
         document.getElementById('fetchLogBtn')?.addEventListener('click', async () => {
             const sel = document.getElementById('logFileSelect').value;
-            const data = await apiReq(`/api/logs/${sel}?lines=300`);
+            const data = await apiReq(`/api/logs/${sel}?lines=300`).catch(() => ({ content: 'Log not available' }));
             document.getElementById('logViewerArea').innerText = data.content || 'No content';
         });
     }
@@ -607,12 +844,16 @@
         await refreshCore();
         const tplSelect = document.getElementById('campTemplateSelect');
         const recipSelect = document.getElementById('campRecipientSelect');
-        if(tplSelect) tplSelect.innerHTML = templatesCache.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+        if(tplSelect) tplSelect.innerHTML = templatesCache.map(t => `<option value="${t.name}">${t.name} ${t.attachment_count > 0 ? '📎' : ''}</option>`).join('');
         if(recipSelect) recipSelect.innerHTML = recipientsCache.map(r => `<option value="${r.name}">${r.display_name || r.name}</option>`).join('');
         document.getElementById('campaignModal').classList.add('active');
     }
 
+    // Modal event listeners
     document.getElementById('closeModalBtn')?.addEventListener('click', () => document.getElementById('campaignModal').classList.remove('active'));
+    document.getElementById('closeTemplateModalBtn')?.addEventListener('click', () => document.getElementById('templateEditorModal').classList.remove('active'));
+    document.getElementById('cancelTemplateBtn')?.addEventListener('click', () => document.getElementById('templateEditorModal').classList.remove('active'));
+    
     document.getElementById('confirmCampaignBtn')?.addEventListener('click', async () => {
         const payload = {
             campaign_name: document.getElementById('campName').value,
@@ -625,10 +866,49 @@
         if(!payload.recipients_file || !payload.template) return alert('Select both template and recipient CSV');
         await apiReq('/api/campaign/start', { method: 'POST', body: JSON.stringify(payload) });
         document.getElementById('campaignModal').classList.remove('active');
+        showToast('Campaign started successfully!', 'success');
         renderCurrentTab();
     });
+    
+    document.getElementById('saveTemplateFinalBtn')?.addEventListener('click', async () => {
+        const name = document.getElementById('tplNameEdit').value.trim();
+        const content = document.getElementById('tplHtmlContent').value;
+        if(!name) return alert('Template name required');
+        await apiReq('/api/templates', { method: 'POST', body: JSON.stringify({ name, content }) });
+        document.getElementById('templateEditorModal').classList.remove('active');
+        showToast('Template saved successfully!', 'success');
+        renderCurrentTab();
+    });
+    
+    document.getElementById('uploadAttachmentBtn')?.addEventListener('click', async () => {
+        const templateName = document.getElementById('tplNameEdit').value.trim();
+        if (!templateName) {
+            alert('Please save the template name first before uploading attachments');
+            return;
+        }
+        
+        const fileInput = document.getElementById('attachmentUpload');
+        if (!fileInput.files.length) {
+            alert('Select files to upload');
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        
+        const res = await fetch(`/api/templates/${templateName}/attachments`, { method: 'POST', body: formData });
+        const data = await res.json();
+        
+        if (data.success) {
+            showToast('Attachment uploaded', 'success');
+            fileInput.value = '';
+            await loadAttachments(templateName);
+        } else {
+            showToast('Upload failed: ' + (data.error || 'Unknown'), 'error');
+        }
+    });
 
-    // Event listeners navigation
+    // Navigation
     document.querySelectorAll('.nav-item').forEach(el => {
         el.addEventListener('click', () => {
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -637,6 +917,7 @@
             renderCurrentTab();
         });
     });
+    
     renderCurrentTab();
 </script>
 </body>
