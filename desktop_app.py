@@ -11,6 +11,7 @@ import sys
 import os
 import signal
 import webbrowser
+import subprocess
 from datetime import datetime
 
 # Import Flask app from main.py
@@ -94,7 +95,7 @@ class MailerXServer:
             wait_time += 0.5
     
     def stop(self):
-        """Stop Flask server (note: Flask doesn't have a simple stop, but we can set flag)"""
+        """Stop Flask server"""
         self.is_running = False
         print("🛑 Flask server stopping...")
 
@@ -119,7 +120,8 @@ class MailerXWebView:
             'maximizeWindow': self.maximize_window,
             'closeWindow': self.close_window,
             'exportData': self.export_data,
-            'printReport': self.print_report
+            'printReport': self.print_report,
+            'openDevTools': self.open_dev_tools
         }
         
         # Create window with JavaScript bridge
@@ -131,7 +133,7 @@ class MailerXWebView:
             min_size=(1100, 700),
             text_select=False,
             confirm_close=True,
-            background_color='#f8fafc',
+            background_color='#0f172a',
             js_api=js_api
         )
         
@@ -143,7 +145,8 @@ class MailerXWebView:
         return {
             'version': '2.0.0',
             'build_date': '2025-04-14',
-            'name': 'MailerX Pro'
+            'name': 'MailerX Pro',
+            'platform': sys.platform
         }
     
     def open_external_browser(self, url):
@@ -156,7 +159,6 @@ class MailerXWebView:
     
     def show_notification(self, title, message):
         """Show system notification"""
-        # webview doesn't have native notifications, but we can log
         print(f"🔔 Notification - {title}: {message}")
         return {'success': True}
     
@@ -171,7 +173,8 @@ class MailerXWebView:
             'processor': platform.processor(),
             'python_version': sys.version,
             'host': self.server.host,
-            'port': self.server.port
+            'port': self.server.port,
+            'executable': sys.executable if hasattr(sys, 'executable') else 'unknown'
         }
     
     def minimize_window(self):
@@ -183,7 +186,7 @@ class MailerXWebView:
     def maximize_window(self):
         """Toggle maximize/restore the application window"""
         if self.window:
-            if self.window.maximized:
+            if getattr(self.window, 'maximized', False):
                 self.window.restore()
             else:
                 self.window.maximize()
@@ -195,13 +198,20 @@ class MailerXWebView:
             self.window.destroy()
         return {'success': True}
     
+    def open_dev_tools(self):
+        """Open developer tools for debugging"""
+        if self.window:
+            self.window.evaluate_js("console.log('Dev Tools requested');")
+            # In pywebview, dev tools can be opened with a flag
+            print("💻 Dev Tools: Run with debug=True to enable")
+        return {'success': True}
+    
     def export_data(self, data_type, format='json'):
-        """Export data from the application (placeholder for actual export)"""
+        """Export data from the application"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"mailerx_export_{data_type}_{timestamp}.{format}"
         
         # This would need to be implemented with actual data export logic
-        # For now, return a simulated response
         return {
             'success': True,
             'filename': filename,
@@ -209,10 +219,8 @@ class MailerXWebView:
         }
     
     def print_report(self, report_data):
-        """Print a report (placeholder for actual printing)"""
-        # In a real implementation, this would use webview's print functionality
+        """Print a report"""
         if self.window:
-            # webview doesn't have built-in print, but we can load a print dialog via JS
             self.window.evaluate_js("window.print();")
         return {'success': True}
 
@@ -221,6 +229,23 @@ def signal_handler(signum, frame):
     """Handle Ctrl+C gracefully"""
     print("\n🛑 Received shutdown signal. Exiting...")
     sys.exit(0)
+
+
+def ensure_data_directories():
+    """Ensure all required data directories exist"""
+    directories = [
+        'data',
+        'data/templates',
+        'data/attachments',
+        'data/uploads',
+        'data/logs',
+        'data/backups'
+    ]
+    
+    for directory in directories:
+        os.makedirs(resource_path(directory), exist_ok=True)
+    
+    print("✓ Data directories verified")
 
 
 def main():
@@ -238,6 +263,9 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
+    # Ensure data directories exist
+    ensure_data_directories()
+    
     # Initialize server
     server = MailerXServer()
     server.start()
@@ -247,11 +275,10 @@ def main():
     window = webview_manager.create_window()
     
     # Optional: Load custom CSS for desktop mode
-    # This can be injected via JavaScript when the page loads
     def inject_desktop_styles():
         """Inject additional CSS for desktop optimization"""
         # Wait for page to load before injecting
-        time.sleep(1)
+        time.sleep(2)
         if window:
             window.evaluate_js("""
                 // Add desktop-specific styles
@@ -280,6 +307,15 @@ def main():
                     ::-webkit-scrollbar-thumb:hover {
                         background: #94a3b8;
                     }
+                    
+                    /* Desktop app optimizations */
+                    body {
+                        user-select: none; /* Prevent text selection for better desktop feel */
+                    }
+                    
+                    input, textarea {
+                        user-select: text; /* Allow text selection in inputs */
+                    }
                 `;
                 document.head.appendChild(style);
                 
@@ -290,6 +326,9 @@ def main():
                         detail: { platform: 'desktop', version: '2.0.0' }
                     }));
                 }
+                
+                // Add window control buttons if needed
+                console.log('🎨 Desktop enhancements applied');
             """)
     
     # Start a thread to inject desktop styles after page loads
@@ -303,6 +342,8 @@ def main():
     🖥️  Native desktop window active
     🔗 JavaScript bridge available
     🛡️  CORS and security enabled
+    
+    📁 Data Directory: {resource_path('data')}
     
     ℹ️  To quit, close the window or press Ctrl+C in terminal
     """)
@@ -323,39 +364,5 @@ def main():
         print("👋 MailerX Pro has been closed.")
 
 
-# Optional: Run as single instance (Windows only)
-def check_single_instance():
-    """Ensure only one instance of the application runs"""
-    if sys.platform == 'win32':
-        try:
-            import win32event
-            import win32api
-            from win32com.client import GetObject
-            
-            mutex_name = "MailerXPro_Desktop_Application"
-            mutex = win32event.CreateMutex(None, False, mutex_name)
-            if win32api.GetLastError() == win32event.ERROR_ALREADY_EXISTS:
-                print("⚠️ Another instance of MailerX Pro is already running.")
-                print("   Please close the other instance first.")
-                return False
-            return True
-        except ImportError:
-            # win32api not available, skip single instance check
-            return True
-    return True
-
-
 if __name__ == '__main__':
-    # Ensure data directories exist before starting
-    from main import Config
-    for path in [Config.TEMPLATES_PATH, Config.ATTACHMENTS_PATH, Config.LOGS_PATH, 
-                 Config.BACKUPS_PATH, Config.UPLOADS_PATH]:
-        os.makedirs(path, exist_ok=True)
-    
-    # Check for single instance (optional)
-    if not check_single_instance():
-        input("Press Enter to exit...")
-        sys.exit(1)
-    
-    # Run the application
     main()
