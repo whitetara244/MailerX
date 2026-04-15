@@ -5,6 +5,8 @@
 /blacklists
 /uploads
 /data
+/build
+/dist
 static/1x1.png
 static/img/1x1.png
 templates/welcome.html
